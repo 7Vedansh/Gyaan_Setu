@@ -6,22 +6,20 @@ import { Pressable, ScrollView } from "react-native";
 import { Container } from "@/components/container";
 import { Metadata } from "@/components/metadata";
 import { Text, View } from "@/components/themed";
-import { languages } from "@/config/language";
 import { colors } from "@/constants/colors";
+import { DEFAULT_LANGUAGE_CODE } from "@/constants/default";
 import { layouts } from "@/constants/layouts";
 import { getCommonTranslation } from "@/content/translations";
 import { useBreakpoint } from "@/context/breakpoints";
 import { useCourse } from "@/context/course";
-import { useLanguageCode } from "@/context/language";
 import { useTheme } from "@/context/theme";
-import { SupportedLanguageCode } from "@/types";
 
 export default function Register() {
-  const { border, accent, background, mutedForeground } = useTheme();
+  const { border, accent, background, mutedForeground, primary } = useTheme();
   const breakpoint = useBreakpoint();
-  const { languageCode } = useLanguageCode();
   const { setCourseId } = useCourse();
   const [containerWidth, setContainerWidth] = useState(0);
+  const languageCode = DEFAULT_LANGUAGE_CODE;
 
   return (
     <>
@@ -37,7 +35,12 @@ export default function Register() {
           >
             <View style={{ gap: layouts.padding * 2 }}>
               <Text
-                style={{ fontSize: 32, fontWeight: "800", textAlign: "center" }}
+                style={{
+                  fontSize: 32,
+                  fontWeight: "800",
+                  textAlign: "center",
+                  color: primary,
+                }}
               >
                 {getCommonTranslation("iWantToLearn", languageCode)}
               </Text>
@@ -52,67 +55,76 @@ export default function Register() {
                     breakpoint === "sm" ? layouts.padding : layouts.padding * 2,
                 }}
               >
-                {Object.keys(languages).map((key, index) => {
-                  const code = key as SupportedLanguageCode;
-                  if (languageCode === code) return null;
-                  const language = languages[code];
-
-                  const cols = breakpoint === "sm" ? 2 : 4;
-                  const size =
-                    (containerWidth - layouts.padding * (cols - 1)) / cols;
-
-                  return (
-                    <Pressable
-                      key={index}
+                <Pressable
+                  style={{
+                    width:
+                      containerWidth > 0
+                        ? breakpoint === "sm"
+                          ? containerWidth
+                          : Math.min(containerWidth, 360)
+                        : 320,
+                  }}
+                  onPress={() => {
+                    setCourseId(languageCode);
+                    router.push("/learn");
+                  }}
+                >
+                  {({ pressed, hovered }) => (
+                    <View
                       style={{
-                        width: size,
-                      }}
-                      onPress={() => {
-                        setCourseId(code);
-                        router.push("/learn");
+                        padding: layouts.padding * 1.5,
+                        borderWidth: layouts.borderWidth,
+                        borderColor: border,
+                        alignItems: "center",
+                        borderRadius: layouts.radiusLg,
+                        gap: layouts.padding,
+                        backgroundColor: hovered || pressed ? accent : background,
+                        transform: pressed ? [{ scale: 0.98 }] : undefined,
+                        shadowColor: "#000",
+                        shadowOpacity: 0.08,
+                        shadowRadius: 10,
+                        shadowOffset: { width: 0, height: 5 },
+                        elevation: 2,
                       }}
                     >
-                      {({ pressed, hovered }) => (
-                        <View
+                      <View
+                        style={{
+                          width: 120,
+                          aspectRatio: 4 / 3,
+                          overflow: "hidden",
+                          borderRadius: layouts.radiusSm,
+                          backgroundColor: colors.transparent,
+                          borderWidth: layouts.borderWidth,
+                          borderColor: border,
+                        }}
+                      >
+                        <Image
+                          source="https://www.svgrepo.com/show/405645/flag-for-flag-united-states.svg"
+                          style={{ width: "100%", height: "100%" }}
+                        />
+                      </View>
+                      <View style={{ alignItems: "center", gap: 6 }}>
+                        <Text
                           style={{
-                            padding: layouts.padding,
-                            borderWidth: layouts.borderWidth,
-                            borderColor: border,
-                            alignItems: "center",
-                            borderRadius: layouts.padding,
-                            gap: layouts.padding,
-                            backgroundColor:
-                              hovered || pressed ? accent : background,
+                            fontSize: 20,
+                            fontWeight: "800",
+                            color: mutedForeground,
                           }}
                         >
-                          <View
-                            style={{
-                              width: 100,
-                              aspectRatio: 4 / 3,
-                              overflow: "hidden",
-                              borderRadius: 6,
-                              backgroundColor: colors.transparent,
-                            }}
-                          >
-                            <Image
-                              source={language.flag}
-                              style={{ width: "100%", height: "100%" }}
-                            />
-                          </View>
-                          <Text
-                            style={{
-                              fontSize: 18,
-                              fontWeight: "bold",
-                              color: mutedForeground,
-                            }}
-                          >
-                            {language.name}
-                          </Text>
-                        </View>
-                      )}
-                    </Pressable>
-                  );
-                })}
+                          English
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            color: mutedForeground,
+                          }}
+                        >
+                          STEM-ready lessons
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                </Pressable>
               </View>
             </View>
           </Container>

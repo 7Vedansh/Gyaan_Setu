@@ -9,15 +9,27 @@ export type ViewProps = DefaultView["props"];
 export const Text = forwardRef<DefaultText, TextProps>(
   ({ style, ...props }, ref) => {
     const { foreground } = useTheme();
+
     return (
       <DefaultText
         ref={ref}
-        style={[{ color: foreground }, style]}
+        style={[
+          {
+            color: foreground,
+            fontSize: 16,
+            lineHeight: 24,
+            fontFamily: "System",
+            letterSpacing: 0.2,
+            fontWeight: "500",
+          },
+          style,
+        ]}
         {...props}
       />
     );
   }
 );
+
 
 export const View = forwardRef<DefaultView, ViewProps>(
   ({ style, ...props }, ref) => {

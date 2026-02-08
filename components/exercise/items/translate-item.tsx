@@ -1,13 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Image } from "expo-image";
-import { Pressable, ScrollView } from "react-native";
+import { Animated, Pressable, ScrollView } from "react-native";
 
 import { Text, View } from "@/components/themed";
 import { colors } from "@/constants/colors";
 import { DEFAULT_COURSE_ID } from "@/constants/default";
 import { layouts } from "@/constants/layouts";
 import { useCourse } from "@/context/course";
-import { useLanguageCode } from "@/context/language";
 import { useTheme } from "@/context/theme";
 import {
   ExerciseItemProps,
@@ -22,9 +21,9 @@ interface Props extends ExerciseItemProps {
 }
 
 export function TranslateItem({ exercise, onContinue, onResult }: Props) {
-  const { languageCode } = useLanguageCode();
+  const languageCode = DEFAULT_COURSE_ID;
   const { courseId } = useCourse();
-  const { border } = useTheme();
+  const { border, secondary, accent, accentForeground } = useTheme();
 
   const [isSuccess, setIsSuccess] = useState<boolean | null>(null);
   const [selectedOptions, setSelectOptions] = useState<
@@ -83,7 +82,7 @@ export function TranslateItem({ exercise, onContinue, onResult }: Props) {
           gap: layouts.padding * 2,
         }}
       >
-        <Text style={{ fontSize: 24, fontWeight: "bold" }}>
+        <Text style={{ fontSize: 24, fontWeight: "700", letterSpacing: -0.3 }}>
           {exercise.question[languageCode]}
         </Text>
         <View>
@@ -100,11 +99,12 @@ export function TranslateItem({ exercise, onContinue, onResult }: Props) {
                   padding: layouts.padding,
                   borderWidth: layouts.borderWidth,
                   borderColor: border,
-                  borderRadius: layouts.padding,
+                  borderRadius: layouts.radiusLg,
                   position: "relative",
+                  backgroundColor: secondary,
                 }}
               >
-                <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+                <Text style={{ fontSize: 16, fontWeight: "700", letterSpacing: -0.2 }}>
                   {exercise.sentence.content[courseId!]}
                 </Text>
                 <View
@@ -155,19 +155,28 @@ export function TranslateItem({ exercise, onContinue, onResult }: Props) {
                   }
                   disabled={isSuccess !== null}
                 >
-                  <View
-                    key={index}
-                    style={{
-                      padding: layouts.padding,
-                      borderWidth: layouts.borderWidth,
-                      borderColor: border,
-                      borderRadius: layouts.padding,
-                    }}
-                  >
-                    <Text style={{ fontSize: 16, fontWeight: "bold" }}>
-                      {option.word.content[languageCode]}
-                    </Text>
-                  </View>
+                  {({ pressed }) => (
+                    <Animated.View
+                      key={index}
+                      style={{
+                        padding: layouts.padding * 0.75,
+                        borderWidth: layouts.borderWidth,
+                        borderColor: border,
+                        borderRadius: layouts.radius,
+                        backgroundColor: secondary,
+                        shadowColor: "#000",
+                        shadowOpacity: 0.04,
+                        shadowRadius: 4,
+                        shadowOffset: { width: 0, height: 2 },
+                        elevation: 1,
+                        transform: pressed ? [{ scale: 0.96 }] : undefined,
+                      }}
+                    >
+                      <Text style={{ fontSize: 14, fontWeight: "700", letterSpacing: -0.2 }}>
+                        {option.word.content[languageCode]}
+                      </Text>
+                    </Animated.View>
+                  )}
                 </Pressable>
               ))}
             </View>
@@ -201,26 +210,35 @@ export function TranslateItem({ exercise, onContinue, onResult }: Props) {
                   }}
                   disabled={isSuccess !== null}
                 >
-                  <View
-                    style={[
-                      {
-                        padding: layouts.padding,
-                        borderWidth: layouts.borderWidth,
-                        borderColor: border,
-                        borderRadius: layouts.padding,
-                      },
-                      isSelected && { backgroundColor: border },
-                    ]}
-                  >
-                    <Text
+                  {({ pressed }) => (
+                    <Animated.View
                       style={[
-                        { fontSize: 16, fontWeight: "bold" },
-                        isSelected && { color: border },
+                        {
+                          padding: layouts.padding * 0.75,
+                          borderWidth: layouts.borderWidth,
+                          borderColor: border,
+                          borderRadius: layouts.radius,
+                          backgroundColor: secondary,
+                          shadowColor: "#000",
+                          shadowOpacity: 0.04,
+                          shadowRadius: 4,
+                          shadowOffset: { width: 0, height: 2 },
+                          elevation: 1,
+                          transform: pressed ? [{ scale: 0.96 }] : undefined,
+                        },
+                        isSelected && { backgroundColor: accent },
                       ]}
                     >
-                      {option.word.content[languageCode]}
-                    </Text>
-                  </View>
+                      <Text
+                        style={[
+                          { fontSize: 14, fontWeight: "700", letterSpacing: -0.2 },
+                          isSelected && { color: accentForeground },
+                        ]}
+                      >
+                        {option.word.content[languageCode]}
+                      </Text>
+                    </Animated.View>
+                  )}
                 </Pressable>
               );
             })}

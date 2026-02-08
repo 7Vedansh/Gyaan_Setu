@@ -9,7 +9,7 @@ const config: ExpoConfig = {
   slug: "gyaan-setu",
   version: "1.0.0",
   orientation: "portrait",
-  icon: "./assets/images/icon.png",
+  icon: "./assets/images/icon.jpg",
   scheme: "myapp",
   userInterfaceStyle: "automatic",
   splash: {
@@ -23,7 +23,7 @@ const config: ExpoConfig = {
   },
   android: {
     adaptiveIcon: {
-      foregroundImage: "./assets/images/adaptive-icon.png",
+      foregroundImage: "./assets/images/adaptive-icon.jpg",
       backgroundColor: "#DFEBF7",
     },
   },
@@ -36,7 +36,7 @@ const config: ExpoConfig = {
   experiments: {
     typedRoutes: true,
   },
-  owner: "@ikyawthetpaing",
+  owner: "@7Vedansh",
 };
 
 export default config;

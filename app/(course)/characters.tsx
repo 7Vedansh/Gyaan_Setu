@@ -11,7 +11,7 @@ import { useTheme } from "@/context/theme";
 export default function Characters() {
   const { courseId } = useCourse();
   const breakpoint = useBreakpoint();
-  const { mutedForeground, border, foreground } = useTheme();
+  const { mutedForeground, border, foreground, accent, primary } = useTheme();
   const [activeIndex, setActiveIndex] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -39,17 +39,16 @@ export default function Characters() {
                   ? layouts.padding * 2
                   : layouts.padding * 3,
               borderBottomWidth: layouts.borderWidth,
-              borderBottomColor: activeIndex === index ? foreground : border,
+              borderBottomColor: activeIndex === index ? primary : border,
             }}
             onPress={() => (activeIndex !== index ? setActiveIndex(index) : {})}
           >
             <Text
               style={{
                 fontSize: 16,
-                fontWeight: "bold",
-                color: activeIndex === index ? foreground : mutedForeground,
+                fontWeight: "800",
+                color: activeIndex === index ? primary : mutedForeground,
                 textAlign: "center",
-                textTransform: "uppercase",
               }}
             >
               {role}
@@ -79,21 +78,33 @@ export default function Characters() {
                 5;
 
           return (
-            <Pressable
-              key={index}
-              style={{
-                width: size,
-                height: size,
-                borderWidth: layouts.borderWidth,
-                borderColor: border,
-                borderRadius: layouts.padding,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Text style={{ fontSize: 24, color: mutedForeground }}>
-                {item}
-              </Text>
+            <Pressable key={index}>
+              {({ pressed }) => (
+                <View
+                  style={{
+                    width: size,
+                    height: size,
+                    borderWidth: layouts.borderWidth,
+                    borderColor: border,
+                    borderRadius: layouts.radius,
+                    backgroundColor: accent,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    transform: pressed ? [{ scale: 0.97 }] : undefined,
+                    shadowColor: "#000",
+                    shadowOpacity: 0.06,
+                    shadowRadius: 6,
+                    shadowOffset: { width: 0, height: 3 },
+                    elevation: 1,
+                  }}
+                >
+                  <Text
+                    style={{ fontSize: 24, fontWeight: "800", color: foreground }}
+                  >
+                    {item}
+                  </Text>
+                </View>
+              )}
             </Pressable>
           );
         })}

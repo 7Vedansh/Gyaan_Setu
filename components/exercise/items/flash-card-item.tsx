@@ -1,6 +1,7 @@
-import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from "react";
 import { Image } from "expo-image";
 import {
+  Animated,
   Pressable,
   PressableProps,
   ScrollView,
@@ -13,7 +14,6 @@ import { DEFAULT_COURSE_ID } from "@/constants/default";
 import { layouts } from "@/constants/layouts";
 import { useBreakpoint } from "@/context/breakpoints";
 import { useCourse } from "@/context/course";
-import { useLanguageCode } from "@/context/language";
 import { useTheme } from "@/context/theme";
 import { useAudio } from "@/hooks/audio";
 import { shuffleArray } from "@/lib/utils";
@@ -32,7 +32,7 @@ interface Props extends ExerciseItemProps {
 export function FlashCardItem({ exercise, onResult, onContinue }: Props) {
   const shuffled = useMemo(() => shuffleArray(exercise.words), [exercise]);
 
-  const { languageCode } = useLanguageCode();
+  const languageCode = DEFAULT_COURSE_ID;
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [isSuccess, setIsSuccess] = useState<boolean | null>(null);
@@ -72,7 +72,7 @@ export function FlashCardItem({ exercise, onResult, onContinue }: Props) {
             gap: layouts.padding * 2,
           }}
         >
-          <Text style={{ fontSize: 24, fontWeight: "bold" }}>
+          <Text style={{ fontSize: 24, fontWeight: "700", letterSpacing: -0.3 }}>
             {exercise.question[languageCode]}
           </Text>
           <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
@@ -143,75 +143,140 @@ function FlashCardWord({
     source: word.audio ? word.audio[courseId!] : undefined,
   });
 
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (selectedId === word.id) {
+      Animated.spring(scaleAnim, {
+        toValue: 1.02,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 100,
+      }).start();
+    } else {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 100,
+      }).start();
+    }
+  }, [selectedId, scaleAnim, word.id]);
+
+  const handlePressIn = () => {
+    Animated.spring(pulseAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+      friction: 6,
+      tension: 100,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(pulseAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      friction: 6,
+      tension: 100,
+    }).start();
+  };
+
   return (
     <Pressable
-      style={[
-        {
-          borderWidth: layouts.borderWidth,
-          borderColor: selectedId === word.id ? foreground : muted,
-          width:
-            breakpoint === "sm"
-              ? layout.width / 2 - layouts.padding * 1.5
-              : 150,
-          borderRadius: layouts.padding,
-          justifyContent: "center",
-          alignItems: "center",
-          padding: layouts.padding,
-          gap: layouts.padding,
-        },
-        selectedId === word.id &&
-          isSuccess === true && {
-            borderColor: sucessForeground,
-            backgroundColor: sucess,
-          },
-        selectedId === word.id &&
-          isSuccess === false && {
-            borderColor: destructiveForeground,
-            backgroundColor: destructive,
-          },
-      ]}
       onPress={() => {
         if (isSuccess === null) {
           setSelectedId(word.id);
         }
         playSound();
       }}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
     >
-      <View
-        style={{
-          padding: layouts.padding,
-          width: "100%",
-          aspectRatio: 1,
-          backgroundColor: colors.transparent,
-        }}
-      >
-        <Image
-          source={word.image}
-          style={{
-            width: "100%",
-            height: "100%",
-          }}
-        />
-      </View>
-      <Text
-        style={[
-          {
-            fontSize: 24,
-            fontWeight: "bold",
-            color: selectedId === word.id ? foreground : mutedForeground,
-          },
-          selectedId === word.id &&
-            isSuccess === true && {
-              color: sucessForeground,
+      {({ pressed }) => (
+        <Animated.View
+          style={[
+            {
+              borderWidth: layouts.borderWidth,
+              borderColor: selectedId === word.id ? foreground : muted,
+              width:
+                breakpoint === "sm"
+                  ? layout.width / 2 - layouts.padding * 1.5
+                  : 150,
+              borderRadius: layouts.radiusLg,
+              justifyContent: "center",
+              alignItems: "center",
+              padding: layouts.padding,
+              gap: layouts.padding,
+              backgroundColor: colors.transparent,
+              shadowColor: "#000",
+              shadowOpacity: 0.04,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 1,
+              transform: [
+                { scale: scaleAnim },
+                { scale: pulseAnim },
+              ],
             },
-          selectedId === word.id &&
-            isSuccess === false && {
-              color: destructiveForeground,
-            },
-        ]}
-      >
-        {word.content[courseId || DEFAULT_COURSE_ID]}
-      </Text>
+            selectedId === word.id &&
+              isSuccess === true && {
+                borderColor: sucessForeground,
+                backgroundColor: sucess,
+                shadowColor: sucessForeground,
+                shadowOpacity: 0.2,
+                elevation: 2,
+              },
+            selectedId === word.id &&
+              isSuccess === false && {
+                borderColor: destructiveForeground,
+                backgroundColor: destructive,
+                shadowColor: destructiveForeground,
+                shadowOpacity: 0.15,
+                elevation: 2,
+              },
+          ]}
+        >
+          <View
+            style={{
+              padding: layouts.padding,
+              width: "100%",
+              aspectRatio: 1,
+              backgroundColor: colors.transparent,
+            }}
+          >
+            <Image
+              source={word.image}
+              style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: layouts.radiusSm,
+              }}
+            />
+          </View>
+          <Text
+            style={[
+              {
+                fontSize: 18,
+                fontWeight: "700",
+                color: selectedId === word.id ? foreground : mutedForeground,
+                textAlign: "center",
+                letterSpacing: -0.2,
+              },
+              selectedId === word.id &&
+                isSuccess === true && {
+                  color: sucessForeground,
+                },
+              selectedId === word.id &&
+                isSuccess === false && {
+                  color: destructiveForeground,
+                },
+            ]}
+          >
+            {word.content[courseId || DEFAULT_COURSE_ID]}
+          </Text>
+        </Animated.View>
+      )}
     </Pressable>
   );
 }

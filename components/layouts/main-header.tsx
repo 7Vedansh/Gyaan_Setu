@@ -1,19 +1,19 @@
 import { Link } from "expo-router";
 
 import { Container } from "@/components/container";
-import { SelectLanguage } from "@/components/select-language";
 import { Text, View, ViewProps } from "@/components/themed";
 import { siteConfig } from "@/config/site";
 import { layouts } from "@/constants/layouts";
 import { useBreakpoint } from "@/context/breakpoints";
 import { useTheme } from "@/context/theme";
+import { changeColorOpacity } from "@/lib/utils";
 
 export const MAIN_HEADER_HEIGHT = 60;
 
 interface Props extends ViewProps {}
 
 export function MainHeader({ style, ...props }: Props) {
-  const { border } = useTheme();
+  const { border, accent, accentForeground, background } = useTheme();
   const breakpoint = useBreakpoint();
 
   return (
@@ -23,6 +23,11 @@ export function MainHeader({ style, ...props }: Props) {
           borderBottomWidth: layouts.borderWidth,
           borderBottomColor: border,
           height: MAIN_HEADER_HEIGHT,
+          shadowColor: "#000",
+          shadowOpacity: 0.02,
+          shadowRadius: 4,
+          shadowOffset: { width: 0, height: 2 },
+          elevation: 1,
         },
         style,
       ]}
@@ -42,14 +47,39 @@ export function MainHeader({ style, ...props }: Props) {
           <Link href="/">
             <Text
               style={{
-                fontSize: 24,
-                fontWeight: "bold",
+                fontSize: 22,
+                fontWeight: "700",
+                letterSpacing: -0.3,
               }}
             >
               {siteConfig.name.toLowerCase()}
             </Text>
           </Link>
-          <SelectLanguage />
+          <View
+            style={{
+              paddingHorizontal: layouts.padding,
+              paddingVertical: layouts.padding / 2.5,
+              borderRadius: layouts.pill,
+              backgroundColor: accent,
+              shadowColor: "#000",
+              shadowOpacity: 0.06,
+              shadowRadius: 4,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 1,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 11,
+                fontWeight: "700",
+                color: accentForeground,
+                textTransform: "uppercase",
+                letterSpacing: 0.7,
+              }}
+            >
+              English STEM
+            </Text>
+          </View>
         </View>
       </Container>
     </View>

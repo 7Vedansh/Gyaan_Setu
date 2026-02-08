@@ -43,7 +43,7 @@ const exerciseResults: {
 ];
 
 export default function LessonOutrolayout(props: Props) {
-  const { foreground, background } = useTheme();
+  const { foreground, background, secondary, primary } = useTheme();
   const breakpoint = useBreakpoint();
   const layout = useWindowDimensions();
   const { courseProgress, setCourseProgress } = useCourse();
@@ -69,7 +69,7 @@ export default function LessonOutrolayout(props: Props) {
             gap: layouts.padding * 4,
           }}
         >
-          <Text style={{ fontSize: 32, fontWeight: "bold" }}>
+          <Text style={{ fontSize: 32, fontWeight: "800", color: primary }}>
             Practice complete!
           </Text>
           <View
@@ -84,8 +84,8 @@ export default function LessonOutrolayout(props: Props) {
                 key={index}
                 style={{
                   padding: layouts.borderWidth,
-                  borderRadius: layouts.padding,
-                  backgroundColor: foreground,
+                  borderRadius: layouts.radiusLg,
+                  backgroundColor: secondary,
                   width:
                     breakpoint === "sm"
                       ? layout.width / exerciseResults.length -
@@ -94,14 +94,19 @@ export default function LessonOutrolayout(props: Props) {
                             exerciseResults.length)
                       : 128,
                   height: 100,
+                  shadowColor: "#000",
+                  shadowOpacity: 0.08,
+                  shadowRadius: 8,
+                  shadowOffset: { width: 0, height: 4 },
+                  elevation: 2,
                 }}
               >
                 <Text
                   style={{
                     textAlign: "center",
                     textTransform: "uppercase",
-                    fontWeight: "bold",
-                    color: background,
+                    fontWeight: "800",
+                    color: foreground,
                     fontSize: 12,
                     padding: layouts.padding / 4,
                   }}
@@ -111,7 +116,7 @@ export default function LessonOutrolayout(props: Props) {
                 <View
                   style={{
                     flex: 1,
-                    borderRadius: layouts.padding - layouts.borderWidth,
+                    borderRadius: layouts.radius,
                     justifyContent: "center",
                     alignItems: "center",
                   }}
@@ -123,10 +128,10 @@ export default function LessonOutrolayout(props: Props) {
                       alignItems: "center",
                     }}
                   >
-                    <Icon name={result.icon} color={foreground} />
+                    <Icon name={result.icon} color={primary} />
                     <Text
                       style={{
-                        fontWeight: "bold",
+                        fontWeight: "800",
                         color: foreground,
                         fontSize: 18,
                       }}

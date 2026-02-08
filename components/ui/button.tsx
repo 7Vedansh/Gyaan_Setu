@@ -1,4 +1,6 @@
+import { useEffect, useRef } from "react";
 import {
+  Animated,
   Pressable,
   PressableProps,
   StyleProp,
@@ -33,12 +35,36 @@ export function Button({
   const { foreground, primaryForeground, mutedForeground, accentForeground } =
     useTheme();
 
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
   const isJustText = typeof children === "string";
 
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.96,
+      useNativeDriver: true,
+      friction: 7,
+      tension: 100,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      friction: 7,
+      tension: 100,
+    }).start();
+  };
+
   return (
-    <Pressable {...props}>
+    <Pressable
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      {...props}
+    >
       {({ pressed, hovered }) => (
-        <View
+        <Animated.View
           style={[
             useThemedStyles({
               variant,
@@ -46,6 +72,7 @@ export function Button({
               hovered,
               disabled: props.disabled,
             }),
+            { transform: [{ scale: scaleAnim }] },
             viewStyle,
           ]}
         >
@@ -53,9 +80,10 @@ export function Button({
             <Text
               style={[
                 {
-                  fontWeight: "800",
+                  fontWeight: "700",
                   color: hovered ? accentForeground : foreground,
-                  textTransform: "uppercase",
+                  fontSize: 16,
+                  letterSpacing: 0.3,
                 },
                 variant === "default" && { color: primaryForeground },
                 props.disabled && { color: mutedForeground },
@@ -67,7 +95,7 @@ export function Button({
           ) : (
             children
           )}
-        </View>
+        </Animated.View>
       )}
     </Pressable>
   );
@@ -91,13 +119,20 @@ const useThemedStyles = ({
     common: {
       backgroundColor: background,
       alignItems: "center",
-      padding: layouts.padding,
-      borderRadius: layouts.padding,
-      transitionDelay: "100ms",
+      paddingVertical: layouts.padding * 0.75,
+      paddingHorizontal: layouts.padding * 1.25,
+      borderRadius: layouts.radius,
+      minHeight: 44,
+      justifyContent: "center",
+      shadowColor: "#000",
+      shadowOpacity: 0.08,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
     },
     default: {
       backgroundColor:
-        hovered || pressed ? changeColorOpacity(primary, 0.75) : primary,
+        hovered || pressed ? changeColorOpacity(primary, 0.85) : primary,
     },
     outline: {
       borderWidth: layouts.borderWidth,
@@ -107,7 +142,7 @@ const useThemedStyles = ({
     ghost: {
       backgroundColor:
         pressed || hovered
-          ? changeColorOpacity(accentForeground, 0.15)
+          ? changeColorOpacity(accentForeground, 0.1)
           : colors.transparent,
     },
   });
@@ -124,7 +159,6 @@ const useThemedStyles = ({
   const themedStyles = {
     ...styles.common,
     ...variantStyles,
-    ...(pressed && { transform: "scale(0.98)" }),
     ...(disabled && { backgroundColor: muted }),
   };
   return themedStyles;

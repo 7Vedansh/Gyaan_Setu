@@ -23,7 +23,7 @@ Follow these steps to get Gyaan Setu up and running on your local machine:
 1. **Clone the Repository:**
 
    ```
-   git clone https://github.com/ikyawthetpaing/gyaan-setu.git
+   git clone https://github.com/7Vedansh/Gyaan_Setu.git
    cd gyaan-setu
    ```
 

@@ -6,7 +6,6 @@ import { Container } from "@/components/container";
 import ExerciseItems from "@/components/exercise/items/exercise-items";
 import LessonOutroScreen from "@/components/exercise/screens/exercise-outro";
 import { Icon } from "@/components/icons";
-import { SelectLanguage } from "@/components/select-language";
 import { Shell } from "@/components/shell";
 import { Text, View } from "@/components/themed";
 import { Button } from "@/components/ui/button";
@@ -32,7 +31,14 @@ export default function ExerciseScreen({ exercise, increaseProgress }: Props) {
   const totalExerciseItems = shuffledExerciseItems.length;
 
   const { courseId } = useCourse();
-  const { accent, foreground, mutedForeground } = useTheme();
+  const {
+    accent,
+    foreground,
+    mutedForeground,
+    accentForeground,
+    primary,
+    muted,
+  } = useTheme();
   const breakpoint = useBreakpoint();
 
   const { playSound: playCorrectSound } = useAudio({ source: sound.correct });
@@ -102,9 +108,27 @@ export default function ExerciseScreen({ exercise, increaseProgress }: Props) {
                   textTransform: "uppercase",
                 }}
               >
-                Language:
+                Course:
               </Text>
-              <SelectLanguage excludes={[courseId]} />
+              <View
+                style={{
+                  paddingHorizontal: layouts.padding,
+                  paddingVertical: layouts.padding / 3,
+                  borderRadius: layouts.pill,
+                  backgroundColor: accent,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "800",
+                    color: accentForeground,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  English
+                </Text>
+              </View>
             </View>
             <Button variant="outline" onPress={() => router.push("/learn")}>
               End Session
@@ -114,8 +138,8 @@ export default function ExerciseScreen({ exercise, increaseProgress }: Props) {
             <View
               style={{
                 height: 16,
-                backgroundColor: accent,
-                borderRadius: 16,
+                backgroundColor: muted,
+                borderRadius: layouts.pill,
                 position: "relative",
               }}
             >
@@ -127,8 +151,8 @@ export default function ExerciseScreen({ exercise, increaseProgress }: Props) {
                     totalExerciseItems
                   )}%`,
                   height: "100%",
-                  backgroundColor: foreground,
-                  borderRadius: 16,
+                  backgroundColor: primary,
+                  borderRadius: layouts.pill,
                 }}
               />
             </View>

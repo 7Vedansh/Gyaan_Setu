@@ -2,38 +2,47 @@ import { ThemeColors } from "@/types";
 
 export const themeColors: ThemeColors = {
   light: {
-    background: "rgb(255, 255, 255)",
-    foreground: "rgb(10, 10, 10)",
-    primary: "rgb(23, 23, 23)",
-    primaryForeground: "rgb(250, 250, 250)",
-    secondary: "rgb(245, 245, 245)",
-    secondaryForeground: "rgb(23, 23, 23)",
-    muted: "rgb(245, 245, 245)",
-    mutedForeground: "rgb(115, 115, 115)",
-    accent: "rgb(245, 245, 245)",
-    accentForeground: "rgb(23, 23, 23)",
-    destructive: "rgb(255,223, 224)",
-    destructiveForeground: "rgb(225, 75, 75)",
-    sucess: "rgb(215, 255, 184)",
-    sucessForeground: "rgb(88, 204, 2)",
-    border: "rgb(229, 229, 229)",
+    // Primary brand colors - Modern gradient from teal to cyan
+    background: "rgb(248, 250, 252)",
+    foreground: "rgb(15, 23, 42)",
+    primary: "rgb(20, 184, 166)",
+    primaryForeground: "rgb(255, 255, 255)",
+    
+    // Secondary colors - Soft blue tones
+    secondary: "rgb(226, 242, 254)",
+    secondaryForeground: "rgb(12, 74, 110)",
+    
+    // Muted/background colors - Neutral grays
+    muted: "rgb(241, 245, 249)",
+    mutedForeground: "rgb(71, 85, 105)",
+    
+    // Accent colors - Fresh emerald for highlights
+    accent: "rgb(236, 253, 245)",
+    accentForeground: "rgb(5, 122, 85)",
+    
+    // Semantic colors
+    destructive: "rgb(254, 226, 226)",
+    destructiveForeground: "rgb(190, 24, 93)",
+    sucess: "rgb(220, 252, 231)",
+    sucessForeground: "rgb(22, 163, 74)",
+    border: "rgb(226, 232, 240)",
   },
   dark: {
-    background: "rgb(10, 10, 10)",
-    foreground: "rgb(250, 250, 250)",
-    primary: "rgb(250, 250, 250)",
-    primaryForeground: "rgb(23, 23, 23)",
-    secondary: "rgb(38, 38, 38)",
-    secondaryForeground: "rgb(250, 250, 250)",
-    muted: "rgb(38, 38, 38)",
-    mutedForeground: "rgb(163, 163, 163)",
-    accent: "rgb(38, 38, 38)",
-    accentForeground: "rgb(250, 250, 250)",
-    destructive: "rgb(255,223, 224)",
-    destructiveForeground: "rgb(225, 75, 75)",
-    sucess: "rgb(215, 255, 184)",
-    sucessForeground: "rgb(88, 204, 2)",
-    border: "rgb(38, 38, 38)",
+    background: "rgb(248, 250, 252)",
+    foreground: "rgb(15, 23, 42)",
+    primary: "rgb(16, 185, 129)",
+    primaryForeground: "rgb(255, 255, 255)",
+    secondary: "rgb(226, 242, 254)",
+    secondaryForeground: "rgb(12, 74, 110)",
+    muted: "rgb(241, 245, 249)",
+    mutedForeground: "rgb(71, 85, 105)",
+    accent: "rgb(236, 253, 245)",
+    accentForeground: "rgb(5, 122, 85)",
+    destructive: "rgb(254, 226, 226)",
+    destructiveForeground: "rgb(190, 24, 93)",
+    sucess: "rgb(220, 252, 231)",
+    sucessForeground: "rgb(22, 163, 74)",
+    border: "rgb(226, 232, 240)",
   },
 };
 

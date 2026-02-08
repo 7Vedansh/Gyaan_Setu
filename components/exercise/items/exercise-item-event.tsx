@@ -41,6 +41,8 @@ export function ExerciseItemEvent({
             : isSuccess === true
             ? sucess
             : destructive,
+        borderTopLeftRadius: layouts.radiusLg,
+        borderTopRightRadius: layouts.radiusLg,
       }}
     >
       {isSuccess !== null ? (
@@ -70,12 +72,13 @@ export function ExerciseItemEvent({
               />
               <Text
                 style={{
-                  fontSize: 18,
-                  fontWeight: "bold",
+                  fontSize: 16,
+                  fontWeight: "700",
                   color: isSuccess ? sucessForeground : destructiveForeground,
+                  letterSpacing: -0.2,
                 }}
               >
-                {isSuccess ? "Excellect" : "Incorrect"}
+                {isSuccess ? "Excellent" : "Incorrect"}
               </Text>
             </View>
             {isSuccess === false && (
@@ -88,8 +91,8 @@ export function ExerciseItemEvent({
               >
                 <Text
                   style={{
-                    fontSize: 16,
-                    fontWeight: "bold",
+                    fontSize: 14,
+                    fontWeight: "600",
                     color: destructiveForeground,
                   }}
                 >
@@ -97,8 +100,9 @@ export function ExerciseItemEvent({
                 </Text>
                 <Text
                   style={{
-                    fontSize: 16,
+                    fontSize: 14,
                     color: destructiveForeground,
+                    fontWeight: "500",
                   }}
                 >
                   {correctAnswer}

@@ -6,7 +6,6 @@ import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "@/components/status-bar";
 import { BreakpointsProvider } from "@/context/breakpoints";
 import { CourseProvider } from "@/context/course";
-import { LanguageCodeProvider } from "@/context/language";
 import { ProtectedRouteProvider } from "@/context/protected-route";
 import { ThemeProvider } from "@/context/theme";
 
@@ -47,14 +46,12 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <BreakpointsProvider>
-        <LanguageCodeProvider>
-          <CourseProvider>
-            <ProtectedRouteProvider>
-              <Stack screenOptions={{ headerShown: false }} />
-              <StatusBar />
-            </ProtectedRouteProvider>
-          </CourseProvider>
-        </LanguageCodeProvider>
+        <CourseProvider>
+          <ProtectedRouteProvider>
+            <Stack screenOptions={{ headerShown: false }} />
+            <StatusBar />
+          </ProtectedRouteProvider>
+        </CourseProvider>
       </BreakpointsProvider>
     </ThemeProvider>
   );

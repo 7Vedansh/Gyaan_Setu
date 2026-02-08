@@ -1,59 +1,122 @@
+import { useRef } from "react";
+import { Animated, Pressable } from "react-native";
 import { Icon } from "@/components/icons";
 import { Text, View, ViewProps } from "@/components/themed";
 import { layouts } from "@/constants/layouts";
-import { useLanguageCode } from "@/context/language";
+import { useTheme } from "@/context/theme";
 import { SupportedLanguageCode } from "@/types";
-
-import { SelectCourse } from "./select-course";
 
 interface Props extends ViewProps {
   courseId: SupportedLanguageCode;
 }
+
 export function CourseDetailsBar({ courseId, style, ...props }: Props) {
-  const { languageCode } = useLanguageCode();
+  const { accent, accentForeground, mutedForeground } = useTheme();
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const animatePress = () => {
+    Animated.sequence([
+      Animated.spring(scaleAnim, {
+        toValue: 0.95,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 100,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 100,
+      }),
+    ]).start();
+  };
+
   return (
     <View
       style={[
         {
           flexDirection: "row",
           justifyContent: "space-between",
-          gap: layouts.padding * 2,
+          alignItems: "center",
+          gap: layouts.padding * 1.5,
         },
         style,
       ]}
       {...props}
     >
-      <SelectCourse excludes={[languageCode]} />
       <View
+        style={{
+          paddingHorizontal: layouts.padding,
+          paddingVertical: layouts.padding / 2.5,
+          borderRadius: layouts.pill,
+          backgroundColor: accent,
+          shadowColor: "#000",
+          shadowOpacity: 0.05,
+          shadowRadius: 4,
+          shadowOffset: { width: 0, height: 2 },
+          elevation: 1,
+        }}
+      >
+        <Text
+          style={{
+            fontWeight: "700",
+            fontSize: 11,
+            color: accentForeground,
+            textTransform: "uppercase",
+            letterSpacing: 0.6,
+          }}
+        >
+          English
+        </Text>
+      </View>
+
+      <Animated.View
         style={{
           flexDirection: "row",
           alignItems: "center",
           gap: layouts.padding * 0.5,
+          transform: [{ scale: scaleAnim }],
         }}
       >
-        <Icon name="fire" />
-        <Text style={{ fontWeight: "800" }}>356</Text>
-      </View>
-      <View
+        <Pressable onPress={animatePress}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Icon name="fire" />
+            <Text style={{ fontWeight: "700", fontSize: 14 }}>356</Text>
+          </View>
+        </Pressable>
+      </Animated.View>
+
+      <Animated.View
         style={{
           flexDirection: "row",
           alignItems: "center",
           gap: layouts.padding * 0.5,
+          transform: [{ scale: scaleAnim }],
         }}
       >
-        <Icon name="donut" />
-        <Text style={{ fontWeight: "800" }}>500</Text>
-      </View>
-      <View
+        <Pressable onPress={animatePress}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Icon name="donut" />
+            <Text style={{ fontWeight: "700", fontSize: 14 }}>500</Text>
+          </View>
+        </Pressable>
+      </Animated.View>
+
+      <Animated.View
         style={{
           flexDirection: "row",
           alignItems: "center",
           gap: layouts.padding * 0.5,
+          transform: [{ scale: scaleAnim }],
         }}
       >
-        <Icon name="heart" />
-        <Text style={{ fontWeight: "800" }}>5</Text>
-      </View>
+        <Pressable onPress={animatePress}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Icon name="heart" />
+            <Text style={{ fontWeight: "700", fontSize: 14 }}>5</Text>
+          </View>
+        </Pressable>
+      </Animated.View>
     </View>
   );
 }

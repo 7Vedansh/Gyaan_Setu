@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function CourseRightBar({ courseId }: Props) {
-  const { border, muted, mutedForeground } = useTheme();
+  const { border, muted, mutedForeground, secondary, primary } = useTheme();
   return (
     <View
       style={{
@@ -19,17 +19,23 @@ export function CourseRightBar({ courseId }: Props) {
         borderLeftWidth: layouts.borderWidth,
         borderLeftColor: border,
         flexShrink: 0,
-        gap: layouts.padding * 2,
+        gap: layouts.padding * 1.5,
       }}
     >
       <CourseDetailsBar courseId={courseId} />
       <View
         style={{
-          borderRadius: layouts.padding,
+          borderRadius: layouts.radiusLg,
           borderWidth: layouts.borderWidth,
           borderColor: border,
-          padding: layouts.padding * 2,
-          gap: layouts.padding * 2,
+          padding: layouts.padding * 1.5,
+          gap: layouts.padding * 1.5,
+          backgroundColor: secondary,
+          shadowColor: "#000",
+          shadowOpacity: 0.04,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 2 },
+          elevation: 1,
         }}
       >
         <View
@@ -38,62 +44,70 @@ export function CourseRightBar({ courseId }: Props) {
             justifyContent: "space-between",
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: "bold" }}>Daily Quests</Text>
+          <Text style={{ fontSize: 14, fontWeight: "700", letterSpacing: -0.2 }}>Daily Quests</Text>
           <Text
             style={{
-              color: "#1cb0f6",
-              fontWeight: "bold",
-              textTransform: "uppercase",
+              color: primary,
+              fontWeight: "700",
+              fontSize: 12,
+              letterSpacing: 0.3,
             }}
           >
             View all
           </Text>
         </View>
-        <View style={{ flexDirection: "row" }}>
-          <Icon name="bolt" size={64} />
+        <View style={{ flexDirection: "row", gap: layouts.padding }}>
+          <Icon name="bolt" size={56} />
           <View style={{ flex: 1 }}>
-            <Text>Earn 10 XP</Text>
-            <View style={{ flexDirection: "row" }}>
+            <Text style={{ fontSize: 14, fontWeight: "600" }}>Earn 10 XP</Text>
+            <View style={{ flexDirection: "row", gap: layouts.padding * 0.5 }}>
               <View style={{ flex: 1, justifyContent: "center" }}>
                 <View
                   style={{
-                    height: 16,
+                    height: 14,
                     backgroundColor: muted,
                     alignItems: "center",
                     justifyContent: "center",
-                    borderTopLeftRadius: 16,
-                    borderBottomLeftRadius: 16,
+                    borderTopLeftRadius: layouts.pill,
+                    borderBottomLeftRadius: layouts.pill,
                   }}
                 >
-                  <Text style={{ fontSize: 12, color: mutedForeground }}>
+                  <Text style={{ fontSize: 11, color: mutedForeground, fontWeight: "600" }}>
                     0 / 10
                   </Text>
                 </View>
               </View>
-              <Icon name="box" />
+              <Icon name="box" size={24} />
             </View>
           </View>
         </View>
       </View>
       <View
         style={{
-          borderRadius: layouts.padding,
+          borderRadius: layouts.radiusLg,
           borderWidth: layouts.borderWidth,
           borderColor: border,
-          padding: layouts.padding * 2,
-          gap: layouts.padding * 2,
+          padding: layouts.padding * 1.5,
+          gap: layouts.padding * 1.5,
+          backgroundColor: secondary,
+          shadowColor: "#000",
+          shadowOpacity: 0.04,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 2 },
+          elevation: 1,
         }}
       >
         <Text
           style={{
-            fontSize: 16,
-            fontWeight: "bold",
+            fontSize: 14,
+            fontWeight: "700",
             maxWidth: 256,
+            letterSpacing: -0.2,
           }}
         >
           Create a profile to save your progress!
         </Text>
-        <View style={{ gap: layouts.padding }}>
+        <View style={{ gap: layouts.padding * 0.75 }}>
           <Button>Create a profile</Button>
           <Button variant="outline">Sign in</Button>
         </View>

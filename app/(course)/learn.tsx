@@ -7,11 +7,12 @@ import { LessonItem } from "@/components/lesson-item";
 import { Metadata } from "@/components/metadata";
 import { Text, View } from "@/components/themed";
 import { Button } from "@/components/ui/button";
+import { colors } from "@/constants/colors";
 import { layouts } from "@/constants/layouts";
 import { courseContent } from "@/content/courses/data";
 import { useBreakpoint } from "@/context/breakpoints";
 import { useCourse } from "@/context/course";
-import { useLanguageCode } from "@/context/language";
+import { DEFAULT_LANGUAGE_CODE } from "@/constants/default";
 import { useTheme } from "@/context/theme";
 import { Chapter } from "@/types/course";
 
@@ -19,9 +20,10 @@ const CAMP = 16;
 const CIRCLE_RADUIS = 48;
 
 export default function Learn() {
-  const { languageCode } = useLanguageCode();
+  const languageCode = DEFAULT_LANGUAGE_CODE;
   const { courseId, courseProgress } = useCourse();
-  const { mutedForeground, border, accent } = useTheme();
+  const { mutedForeground, border, accent, secondary, foreground, primary } =
+    useTheme();
   const breakpoint = useBreakpoint();
 
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -45,10 +47,17 @@ export default function Learn() {
           {
             flexDirection: "row",
             justifyContent: breakpoint == "md" ? "flex-start" : "space-between",
-            padding: layouts.padding * 2,
-            backgroundColor: accent,
-            borderRadius: breakpoint === "sm" ? 0 : layouts.padding,
+            padding: layouts.padding * 1.5,
+            backgroundColor: secondary,
+            borderRadius: breakpoint === "sm" ? 0 : layouts.radiusLg,
             alignItems: "center",
+            borderWidth: layouts.borderWidth,
+            borderColor: border,
+            shadowColor: "#000",
+            shadowOpacity: 0.04,
+            shadowRadius: 8,
+            shadowOffset: { width: 0, height: 2 },
+            elevation: 1,
           },
           breakpoint == "sm" && {
             paddingHorizontal: layouts.padding,
@@ -57,15 +66,15 @@ export default function Learn() {
       >
         <View
           style={{
-            backgroundColor: accent,
+            backgroundColor: colors.transparent,
             gap: layouts.padding,
             flex: 1,
           }}
         >
-          <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+          <Text style={{ fontSize: 18, fontWeight: "700", color: foreground, letterSpacing: -0.2 }}>
             {chapter.title[languageCode]}
           </Text>
-          <Text style={{ color: mutedForeground }}>
+          <Text style={{ color: mutedForeground, fontSize: 14, lineHeight: 20 }}>
             {chapter.description[languageCode]}
           </Text>
         </View>
@@ -73,6 +82,8 @@ export default function Learn() {
           variant="ghost"
           viewStyle={{
             padding: layouts.padding * 0.5,
+            borderRadius: layouts.radius,
+            backgroundColor: accent,
           }}
         >
           <Icon name="notebook" />
@@ -175,9 +186,10 @@ export default function Learn() {
             <Text
               style={{
                 fontSize: 16,
-                fontWeight: "bold",
-                color: mutedForeground,
+                fontWeight: "700",
+                color: primary,
                 textAlign: "center",
+                letterSpacing: -0.2,
               }}
             >
               {currentSection.title[languageCode]}
