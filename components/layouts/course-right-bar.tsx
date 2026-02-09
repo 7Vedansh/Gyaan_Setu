@@ -1,5 +1,6 @@
 import { CourseDetailsBar } from "@/components/course-details-bar";
 import { Icon } from "@/components/icons";
+import { VoiceAssistant } from "@/components/voice-assistant";
 import { Text, View } from "@/components/themed";
 import { Button } from "@/components/ui/button";
 import { layouts } from "@/constants/layouts";
@@ -23,6 +24,7 @@ export function CourseRightBar({ courseId }: Props) {
       }}
     >
       <CourseDetailsBar courseId={courseId} />
+      <VoiceAssistant style={{ height: 420 }} />
       <View
         style={{
           borderRadius: layouts.radiusLg,
