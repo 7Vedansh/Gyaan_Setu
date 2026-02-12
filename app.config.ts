@@ -9,11 +9,11 @@ const config: ExpoConfig = {
   slug: "gyaan-setu",
   version: "1.0.0",
   orientation: "portrait",
-  icon: "./assets/images/icon.jpg",
+  icon: "./src/assets/images/icon.jpg",
   scheme: "myapp",
   userInterfaceStyle: "automatic",
   splash: {
-    image: "./assets/images/splash.png",
+    image: "./src/assets/images/splash.png",
     resizeMode: "contain",
     backgroundColor: "#DFEBF7",
   },
@@ -23,14 +23,14 @@ const config: ExpoConfig = {
   },
   android: {
     adaptiveIcon: {
-      foregroundImage: "./assets/images/adaptive-icon.jpg",
+      foregroundImage: "./src/assets/images/adaptive-icon.jpg",
       backgroundColor: "#DFEBF7",
     },
   },
   web: {
     bundler: "metro",
     output: "static",
-    favicon: "./assets/images/favicon.png",
+    favicon: "./src/assets/images/favicon.png",
   },
   plugins: ["expo-router"],
   experiments: {
