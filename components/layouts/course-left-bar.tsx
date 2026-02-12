@@ -23,10 +23,10 @@ export function CourseLeftBar({ navItems, appName }: Props) {
   return (
     <View
       style={{
-        padding: layouts.padding * 2,
+        padding: layouts.padding,
         borderRightWidth: layouts.borderWidth,
         borderRightColor: border,
-        gap: layouts.padding * 0.75,
+        gap: layouts.padding,
       }}
     >
       <Link

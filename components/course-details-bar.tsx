@@ -11,7 +11,7 @@ interface Props extends ViewProps {
 }
 
 export function CourseDetailsBar({ courseId, style, ...props }: Props) {
-  const { accent, accentForeground, mutedForeground } = useTheme();
+  const { accent, accentForeground, mutedForeground, primary } = useTheme();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const animatePress = () => {
@@ -38,7 +38,7 @@ export function CourseDetailsBar({ courseId, style, ...props }: Props) {
           flexDirection: "row",
           justifyContent: "space-between",
           alignItems: "center",
-          gap: layouts.padding * 1.5,
+          gap: layouts.padding,
         },
         style,
       ]}
@@ -47,14 +47,14 @@ export function CourseDetailsBar({ courseId, style, ...props }: Props) {
       <View
         style={{
           paddingHorizontal: layouts.padding,
-          paddingVertical: layouts.padding / 2.5,
+          paddingVertical: layouts.padding * 0.5,
           borderRadius: layouts.pill,
           backgroundColor: accent,
-          shadowColor: "#000",
-          shadowOpacity: 0.05,
+          shadowColor: primary,
+          shadowOpacity: 0.1,
           shadowRadius: 4,
           shadowOffset: { width: 0, height: 2 },
-          elevation: 1,
+          elevation: 2,
         }}
       >
         <Text

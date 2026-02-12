@@ -80,10 +80,10 @@ export function Button({
             <Text
               style={[
                 {
-                  fontWeight: "700",
+                  fontWeight: "800",
                   color: hovered ? accentForeground : foreground,
-                  fontSize: 16,
-                  letterSpacing: 0.3,
+                  fontSize: 18,
+                  letterSpacing: 0.5,
                 },
                 variant === "default" && { color: primaryForeground },
                 props.disabled && { color: mutedForeground },
@@ -119,16 +119,16 @@ const useThemedStyles = ({
     common: {
       backgroundColor: background,
       alignItems: "center",
-      paddingVertical: layouts.padding * 0.75,
-      paddingHorizontal: layouts.padding * 1.25,
+      paddingVertical: layouts.padding,
+      paddingHorizontal: layouts.padding,
       borderRadius: layouts.radius,
-      minHeight: 44,
+      minHeight: 52, // Larger touch targets for children
       justifyContent: "center",
       shadowColor: "#000",
-      shadowOpacity: 0.08,
-      shadowRadius: 6,
-      shadowOffset: { width: 0, height: 2 },
-      elevation: 2,
+      shadowOpacity: 0.12,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 4,
     },
     default: {
       backgroundColor:

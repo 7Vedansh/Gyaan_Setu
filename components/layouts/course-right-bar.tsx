@@ -16,11 +16,11 @@ export function CourseRightBar({ courseId }: Props) {
   return (
     <View
       style={{
-        padding: layouts.padding * 2,
+        padding: layouts.padding,
         borderLeftWidth: layouts.borderWidth,
         borderLeftColor: border,
         flexShrink: 0,
-        gap: layouts.padding * 1.5,
+        gap: layouts.padding,
       }}
     >
       <CourseDetailsBar courseId={courseId} />

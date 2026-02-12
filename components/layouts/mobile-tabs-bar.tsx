@@ -22,16 +22,16 @@ export function MobileTabsBar({ navItems }: Props) {
         flexDirection: "row",
         justifyContent: "space-around",
         alignItems: "center",
-        paddingHorizontal: layouts.padding,
-        paddingVertical: layouts.padding * 0.75,
+        paddingHorizontal: layouts.padding * 1.5,
+        paddingVertical: layouts.padding,
         borderTopWidth: layouts.borderWidth,
         borderTopColor: border,
         backgroundColor: background,
-        shadowColor: "#000",
-        shadowOpacity: 0.04,
-        shadowRadius: 4,
-        shadowOffset: { width: 0, height: -2 },
-        elevation: 1,
+        shadowColor: foreground,
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: -4 },
+        elevation: 4,
       }}
     >
       {navItems.map((navItem, index) => {

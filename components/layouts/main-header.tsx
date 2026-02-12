@@ -13,7 +13,7 @@ export const MAIN_HEADER_HEIGHT = 60;
 interface Props extends ViewProps {}
 
 export function MainHeader({ style, ...props }: Props) {
-  const { border, accent, accentForeground, background } = useTheme();
+  const { border, accent, accentForeground, background, primary } = useTheme();
   const breakpoint = useBreakpoint();
 
   return (
@@ -47,9 +47,10 @@ export function MainHeader({ style, ...props }: Props) {
           <Link href="/">
             <Text
               style={{
-                fontSize: 22,
-                fontWeight: "700",
-                letterSpacing: -0.3,
+                fontSize: 24,
+                fontWeight: "800",
+                letterSpacing: -0.5,
+                color: primary,
               }}
             >
               {siteConfig.name.toLowerCase()}
