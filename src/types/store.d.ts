@@ -60,6 +60,22 @@ export interface SyncQueueInput {
     data?: string;
 }
 
+// Quiz result (one row per attempt)
+export interface QuizResult {
+    id: number;
+    quiz_id: number;
+    score: number;
+    total_questions: number;
+    answers_json: string;
+    created_at: number;
+}
+
+export interface QuizResultAnswer {
+    questionIndex: number;
+    selectedAnswer: string;
+    correct: boolean;
+}
+
 // Database Result
 export interface DatabaseResult {
     insertId?: number;

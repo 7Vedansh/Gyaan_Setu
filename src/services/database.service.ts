@@ -7,6 +7,7 @@ class DatabaseService {
     private db: SQLiteDatabase | null = null;
 
     async init(): Promise<void> {
+        if (this.db) return;
         try {
             this.db = await SQLite.openDatabase({
                 name: 'app.db',
@@ -51,19 +52,33 @@ class DatabaseService {
         last_error TEXT
       )`,
 
+            // Quiz results table
+            `CREATE TABLE IF NOT EXISTS quiz_results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        quiz_id INTEGER NOT NULL,
+        score INTEGER NOT NULL,
+        total_questions INTEGER NOT NULL,
+        answers_json TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      )`,
+
             // Indexes for performance
             `CREATE INDEX IF NOT EXISTS idx_items_synced ON items(is_synced)`,
             `CREATE INDEX IF NOT EXISTS idx_items_deleted ON items(is_deleted)`,
             `CREATE INDEX IF NOT EXISTS idx_sync_queue_created ON sync_queue(created_at)`,
+            `CREATE INDEX IF NOT EXISTS idx_quiz_results_quiz_id ON quiz_results(quiz_id)`,
         ];
 
         for (const query of queries) {
-            await this.db.executeSql(query);
+            await this.db.executeSql(query, []);
         }
     }
 
     async insert(tableName: string, data: Record<string, any>): Promise<number> {
         if (!this.db) throw new Error('Database not initialized');
+        if (data == null || typeof data !== 'object' || Array.isArray(data)) {
+            throw new Error('insert() requires a non-null object');
+        }
 
         const columns = Object.keys(data).join(', ');
         const placeholders = Object.keys(data).map(() => '?').join(', ');
