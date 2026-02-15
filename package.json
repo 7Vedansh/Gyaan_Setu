@@ -21,7 +21,7 @@
     "@expo/match-media": "^0.4.0",
     "@react-native-async-storage/async-storage": "1.18.2",
     "@react-native-community/netinfo": "9.3.10",
-    "axios": "^1.13.5",
+    "crypto": "^1.0.1",
     "expo": "^49.0.0",
     "expo-av": "~13.4.1",
     "expo-font": "~11.4.0",
@@ -30,6 +30,7 @@
     "expo-router": "^2.0.0",
     "expo-screen-orientation": "~6.0.6",
     "expo-splash-screen": "~0.20.5",
+    "expo-sqlite": "~11.3.3",
     "expo-status-bar": "~1.6.0",
     "framer-motion": "^10.16.4",
     "lucide-react-native": "^0.300.0",
@@ -47,8 +48,7 @@
     "react-native-svg": "13.9.0",
     "react-native-web": "~0.19.6",
     "react-responsive": "^9.0.2",
-    "zustand": "^4.5.0",
-    "expo-sqlite": "~11.3.3"
+    "zustand": "^4.5.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

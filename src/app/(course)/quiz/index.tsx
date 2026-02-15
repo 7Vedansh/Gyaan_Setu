@@ -1,28 +1,64 @@
 import { Text, View } from "@/components/themed";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useState, useCallback } from "react";
 import { quizData } from "@/content/courses/data/quizzes/data";
 import { Quiz } from "@/types/course";
 import QuizService from "@/services/quiz.service";
+import SyncService from "@/services/sync.service";
 
 export default function Quizzes(): JSX.Element {
     const router = useRouter();
     const [storedResults, setStoredResults] = useState<{ id: number; quiz_id: number; score: number; total_questions: number; created_at: number }[]>([]);
+    const [syncing, setSyncing] = useState(false);
+    const [syncMessage, setSyncMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+    const refreshStoredResults = useCallback(() => {
+        QuizService.getQuizResults()
+            .then((rows) => setStoredResults(rows.slice(0, 10)))
+            .catch(() => setStoredResults([]));
+    }, []);
 
     useFocusEffect(
         useCallback(() => {
-            let cancelled = false;
-            QuizService.getQuizResults()
-                .then((rows) => { if (!cancelled) setStoredResults(rows.slice(0, 10)); })
-                .catch(() => { if (!cancelled) setStoredResults([]); });
-            return () => { cancelled = true; };
-        }, [])
+            refreshStoredResults();
+        }, [refreshStoredResults])
     );
+
+    const handleSync = useCallback(async () => {
+        setSyncing(true);
+        setSyncMessage(null);
+        try {
+            await SyncService.performSync(true);
+            setSyncMessage({ type: "success", text: "Sync complete" });
+            refreshStoredResults();
+        } catch (err) {
+            const text = err instanceof Error ? err.message : "Sync failed";
+            setSyncMessage({ type: "error", text });
+        } finally {
+            setSyncing(false);
+        }
+    }, [refreshStoredResults]);
 
     return (
         <ScrollView style={styles.container}>
+            <View style={styles.syncSection}>
+                <Button
+                    label={syncing ? "Syncing…" : "Sync with cloud"}
+                    onPress={handleSync}
+                    disabled={syncing}
+                    loading={syncing}
+                    variant="secondary"
+                    style={styles.syncButton}
+                />
+                {syncMessage && (
+                    <Text style={syncMessage.type === "success" ? styles.syncSuccess : styles.syncError}>
+                        {syncMessage.text}
+                    </Text>
+                )}
+            </View>
             <View style={styles.resultsSection}>
                 <Text style={styles.resultsTitle}>Stored quiz results (from DB)</Text>
                 {storedResults.length === 0 ? (
@@ -94,5 +130,19 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: "#333",
         marginBottom: 4,
+    },
+    syncSection: {
+        marginBottom: 16,
+    },
+    syncButton: {
+        marginBottom: 8,
+    },
+    syncSuccess: {
+        fontSize: 12,
+        color: "#2e7d32",
+    },
+    syncError: {
+        fontSize: 12,
+        color: "#c62828",
     },
 });

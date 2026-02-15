@@ -1,48 +1,70 @@
-import axios, { AxiosInstance } from 'axios';
 import { ENV } from '@/config/env';
 import { ApiItem, ItemInput } from '../types/store';
 
-class ApiService {
-    private client: AxiosInstance;
+const TIMEOUT_MS = 30000;
 
-    constructor() {
-        this.client = axios.create({
-            baseURL: ENV.API_URL,
-            timeout: 30000,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-
-        // Add auth token if needed
-        this.client.interceptors.request.use(async (config) => {
-            // const token = await getAuthToken();
-            // if (token && config.headers) {
-            //   config.headers.Authorization = `Bearer ${token}`;
-            // }
-            return config;
-        });
+async function request<T>(
+    path: string,
+    options: RequestInit & { params?: Record<string, string | number> } = {}
+): Promise<T> {
+    const { params, ...fetchOptions } = options;
+    let url = `${ENV.API_URL.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+    if (params && Object.keys(params).length > 0) {
+        const search = new URLSearchParams(
+            Object.entries(params).map(([k, v]) => [k, String(v)])
+        ).toString();
+        url += `?${search}`;
     }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    const res = await fetch(url, {
+        ...fetchOptions,
+        signal: controller.signal,
+        headers: {
+            'Content-Type': 'application/json',
+            ...fetchOptions.headers,
+        },
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `HTTP ${res.status}`);
+    }
+
+    if (res.status === 204 || res.headers.get('content-length') === '0') {
+        return undefined as T;
+    }
+
+    return res.json() as Promise<T>;
+}
+
+class ApiService {
     async createItem(data: ItemInput): Promise<ApiItem> {
-        const response = await this.client.post<ApiItem>('/items', data);
-        return response.data;
+        return request<ApiItem>('/items', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
     }
 
     async updateItem(id: string, data: Partial<ItemInput>): Promise<ApiItem> {
-        const response = await this.client.put<ApiItem>(`/items/${id}`, data);
-        return response.data;
+        return request<ApiItem>(`/items/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
     }
 
     async deleteItem(id: string): Promise<void> {
-        await this.client.delete(`/items/${id}`);
+        await request<void>(`/items/${id}`, { method: 'DELETE' });
     }
 
     async getUpdates(timestamp: number): Promise<ApiItem[]> {
-        const response = await this.client.get<ApiItem[]>('/items/updates', {
+        return request<ApiItem[]>('/items/updates', {
             params: { since: timestamp },
         });
-        return response.data;
     }
 }
 

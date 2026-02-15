@@ -136,6 +136,14 @@ class DatabaseService {
         return (Array.isArray(rows) ? rows : []) as T[];
     }
 
+    /** Run a write SQL (e.g. DELETE). Use query() for SELECT. */
+    async runSql(sql: string, params: any[] = []): Promise<void> {
+        if (!this.db) throw new Error('Database not initialized');
+        const results = await this.db.execAsync([ { sql, args: params } ], false);
+        const err = results.find((r): r is ResultSetError => r != null && 'error' in r);
+        if (err) throw err.error;
+    }
+
     async getUnsyncedItems(): Promise<any[]> {
         return this.query(
             'SELECT * FROM items WHERE is_synced = 0 AND is_deleted = 0'

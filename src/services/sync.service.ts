@@ -72,33 +72,31 @@ class SyncService {
         return timeSinceLastSync >= MIN_SYNC_INTERVAL;
     }
 
-    async performSync(): Promise<void> {
+    /**
+     * Run sync: push queue then pull updates.
+     * @param force If true, skip the 30s throttle (e.g. when user taps "Sync now").
+     */
+    async performSync(force?: boolean): Promise<void> {
         if (this.isSyncing) {
-            console.log('Sync already in progress');
-            return;
+            throw new Error('Sync already in progress');
         }
 
-        if (!(await this.canSyncNow())) {
-            console.log('Too soon since last sync');
-            return;
+        if (!force && !(await this.canSyncNow())) {
+            throw new Error('Too soon since last sync. Try again in a moment.');
         }
 
         this.isSyncing = true;
         console.log('Starting sync...');
 
         try {
-            // 1. Process sync queue
+            await DatabaseService.init();
             await this.processSyncQueue();
-
-            // 2. Pull updates from server
             await this.pullUpdates();
-
-            // 3. Update last sync time
             await AsyncStorage.setItem(SYNC_INTERVAL_KEY, Date.now().toString());
-
             console.log('Sync completed successfully');
         } catch (error) {
             console.error('Sync error:', error);
+            throw error;
         } finally {
             this.isSyncing = false;
         }
@@ -112,10 +110,7 @@ class SyncService {
                 await this.syncQueueItem(item);
 
                 // Remove from queue on success
-                await DatabaseService.query(
-                    'DELETE FROM sync_queue WHERE id = ?',
-                    [item.id]
-                );
+                await DatabaseService.runSql('DELETE FROM sync_queue WHERE id = ?', [item.id]);
             } catch (error) {
                 console.error('Error syncing queue item:', error);
 
@@ -129,10 +124,7 @@ class SyncService {
 
                 // Remove from queue if too many retries
                 if (item.retry_count >= 5) {
-                    await DatabaseService.query(
-                        'DELETE FROM sync_queue WHERE id = ?',
-                        [item.id]
-                    );
+                    await DatabaseService.runSql('DELETE FROM sync_queue WHERE id = ?', [item.id]);
                 }
             }
         }
@@ -175,10 +167,7 @@ class SyncService {
                     await ApiService.deleteItem(deleteMongoId);
                 }
                 // Actually delete from local DB
-                await DatabaseService.query(
-                    `DELETE FROM ${table_name} WHERE id = ?`,
-                    [local_id]
-                );
+                await DatabaseService.runSql(`DELETE FROM ${table_name} WHERE id = ?`, [local_id]);
                 break;
         }
     }
