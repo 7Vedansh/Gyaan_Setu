@@ -28,7 +28,7 @@ export interface FlashCardExercise extends Exercise {
   correctWordId: number;
 }
 
-export interface TranslateExerciseWord extends ExerciseWord {}
+export interface TranslateExerciseWord extends ExerciseWord { }
 
 export type TranslateExerciseOption = {
   id: number;
@@ -97,3 +97,17 @@ export type CourseProgression = {
   lessonId: number;
   exerciseId: number;
 };
+
+export interface Question {
+  question: string;
+  options: string[];
+  answer: string;
+}
+
+export interface Quiz {
+  id: number;
+  title: string;
+  description: string;
+  subject: string;
+  questions: Question[];
+}
