@@ -47,7 +47,8 @@
     "react-native-svg": "13.9.0",
     "react-native-web": "~0.19.6",
     "react-responsive": "^9.0.2",
-    "zustand": "^4.5.0"
+    "zustand": "^4.5.0",
+    "expo-sqlite": "~11.3.3"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

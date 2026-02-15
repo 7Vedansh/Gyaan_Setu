@@ -1,22 +1,42 @@
-import SQLite, { SQLiteDatabase } from 'react-native-sqlite-storage';
-import { DatabaseResult } from '../types/store';
+import * as SQLite from 'expo-sqlite';
+import type { ResultSet, ResultSetError } from 'expo-sqlite';
 
-SQLite.enablePromise(true);
+type ExpoSQLiteDatabase = SQLite.SQLiteDatabase;
 
 class DatabaseService {
-    private db: SQLiteDatabase | null = null;
+    private db: ExpoSQLiteDatabase | null = null;
+    private initPromise: Promise<void> | null = null;
 
     async init(): Promise<void> {
-        if (this.db) return;
-        try {
-            this.db = await SQLite.openDatabase({
-                name: 'app.db',
-                location: 'default',
-            });
+        if (this.db != null && typeof this.db.execAsync === 'function') {
+            return;
+        }
+        if (this.initPromise != null) {
+            await this.initPromise;
+            return;
+        }
 
+        this.initPromise = this._doInit();
+        try {
+            await this.initPromise;
+        } finally {
+            this.initPromise = null;
+        }
+    }
+
+    private async _doInit(): Promise<void> {
+        try {
+            const opened = SQLite.openDatabase('app.db');
+
+            if (opened == null || typeof opened.execAsync !== 'function') {
+                throw new Error('Database open did not return a valid database object');
+            }
+
+            this.db = opened;
             await this.createTables();
             console.log('Database initialized successfully');
         } catch (error) {
+            this.db = null;
             console.error('Database initialization error:', error);
             throw error;
         }
@@ -25,53 +45,51 @@ class DatabaseService {
     private async createTables(): Promise<void> {
         if (!this.db) throw new Error('Database not initialized');
 
-        const queries = [
-            // Main data table
-            `CREATE TABLE IF NOT EXISTS items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        mongodb_id TEXT,
-        name TEXT NOT NULL,
-        description TEXT,
-        data TEXT,
-        created_at INTEGER,
-        updated_at INTEGER,
-        is_synced INTEGER DEFAULT 0,
-        is_deleted INTEGER DEFAULT 0
-      )`,
-
-            // Sync queue table
-            `CREATE TABLE IF NOT EXISTS sync_queue (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        local_id INTEGER,
-        mongodb_id TEXT,
-        table_name TEXT NOT NULL,
-        operation TEXT NOT NULL,
-        data TEXT,
-        created_at INTEGER,
-        retry_count INTEGER DEFAULT 0,
-        last_error TEXT
-      )`,
-
-            // Quiz results table
-            `CREATE TABLE IF NOT EXISTS quiz_results (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        quiz_id INTEGER NOT NULL,
-        score INTEGER NOT NULL,
-        total_questions INTEGER NOT NULL,
-        answers_json TEXT NOT NULL,
-        created_at INTEGER NOT NULL
-      )`,
-
-            // Indexes for performance
-            `CREATE INDEX IF NOT EXISTS idx_items_synced ON items(is_synced)`,
-            `CREATE INDEX IF NOT EXISTS idx_items_deleted ON items(is_deleted)`,
-            `CREATE INDEX IF NOT EXISTS idx_sync_queue_created ON sync_queue(created_at)`,
-            `CREATE INDEX IF NOT EXISTS idx_quiz_results_quiz_id ON quiz_results(quiz_id)`,
+        const queries: { sql: string; args: unknown[] }[] = [
+            { sql: `CREATE TABLE IF NOT EXISTS items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                mongodb_id TEXT,
+                name TEXT NOT NULL,
+                description TEXT,
+                data TEXT,
+                created_at INTEGER,
+                updated_at INTEGER,
+                is_synced INTEGER DEFAULT 0,
+                is_deleted INTEGER DEFAULT 0
+            )`, args: [] },
+            { sql: `CREATE TABLE IF NOT EXISTS sync_queue (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                local_id INTEGER,
+                mongodb_id TEXT,
+                table_name TEXT NOT NULL,
+                operation TEXT NOT NULL,
+                data TEXT,
+                created_at INTEGER,
+                retry_count INTEGER DEFAULT 0,
+                last_error TEXT
+            )`, args: [] },
+            { sql: `CREATE TABLE IF NOT EXISTS quiz_results (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                quiz_id INTEGER NOT NULL,
+                score INTEGER NOT NULL,
+                total_questions INTEGER NOT NULL,
+                answers_json TEXT NOT NULL,
+                created_at INTEGER NOT NULL
+            )`, args: [] },
+            { sql: `CREATE INDEX IF NOT EXISTS idx_items_synced ON items(is_synced)`, args: [] },
+            { sql: `CREATE INDEX IF NOT EXISTS idx_items_deleted ON items(is_deleted)`, args: [] },
+            { sql: `CREATE INDEX IF NOT EXISTS idx_sync_queue_created ON sync_queue(created_at)`, args: [] },
+            { sql: `CREATE INDEX IF NOT EXISTS idx_quiz_results_quiz_id ON quiz_results(quiz_id)`, args: [] },
         ];
 
-        for (const query of queries) {
-            await this.db.executeSql(query, []);
-        }
+        const results = await this.db.execAsync(queries, false);
+        const err = results.find((r): r is ResultSetError => r != null && 'error' in r);
+        if (err) throw err.error;
+    }
+
+    private assertResult(first: ResultSetError | ResultSet | undefined): asserts first is ResultSet {
+        if (first == null) return;
+        if ('error' in first) throw first.error;
     }
 
     async insert(tableName: string, data: Record<string, any>): Promise<number> {
@@ -82,12 +100,12 @@ class DatabaseService {
 
         const columns = Object.keys(data).join(', ');
         const placeholders = Object.keys(data).map(() => '?').join(', ');
-        const values = Object.values(data);
+        const args = Object.values(data);
 
-        const query = `INSERT INTO ${tableName} (${columns}) VALUES (${placeholders})`;
-        const [result] = await this.db.executeSql(query, values);
-
-        return result.insertId || 0;
+        const sql = `INSERT INTO ${tableName} (${columns}) VALUES (${placeholders})`;
+        const results = await this.db.execAsync([ { sql, args } ], false);
+        this.assertResult(results[0]);
+        return results[0].insertId ?? 0;
     }
 
     async update(tableName: string, id: number, data: Record<string, any>): Promise<void> {
@@ -96,31 +114,26 @@ class DatabaseService {
         const setClause = Object.keys(data)
             .map(key => `${key} = ?`)
             .join(', ');
-        const values = [...Object.values(data), id];
+        const args = [...Object.values(data), id];
 
-        const query = `UPDATE ${tableName} SET ${setClause} WHERE id = ?`;
-        await this.db.executeSql(query, values);
+        const sql = `UPDATE ${tableName} SET ${setClause} WHERE id = ?`;
+        await this.db.execAsync([ { sql, args } ], false);
     }
 
     async delete(tableName: string, id: number): Promise<void> {
         if (!this.db) throw new Error('Database not initialized');
 
-        // Soft delete
-        const query = `UPDATE ${tableName} SET is_deleted = 1, updated_at = ? WHERE id = ?`;
-        await this.db.executeSql(query, [Date.now(), id]);
+        const sql = `UPDATE ${tableName} SET is_deleted = 1, updated_at = ? WHERE id = ?`;
+        await this.db.execAsync([ { sql, args: [Date.now(), id] } ], false);
     }
 
     async query<T = any>(sql: string, params: any[] = []): Promise<T[]> {
         if (!this.db) throw new Error('Database not initialized');
 
-        const [result] = await this.db.executeSql(sql, params);
-        const rows: T[] = [];
-
-        for (let i = 0; i < result.rows.length; i++) {
-            rows.push(result.rows.item(i));
-        }
-
-        return rows;
+        const results = await this.db.execAsync([ { sql, args: params } ], true);
+        this.assertResult(results[0]);
+        const rows = results[0].rows;
+        return (Array.isArray(rows) ? rows : []) as T[];
     }
 
     async getUnsyncedItems(): Promise<any[]> {
@@ -135,7 +148,7 @@ class DatabaseService {
         );
     }
 
-    getDatabase(): SQLiteDatabase | null {
+    getDatabase(): ExpoSQLiteDatabase | null {
         return this.db;
     }
 }
