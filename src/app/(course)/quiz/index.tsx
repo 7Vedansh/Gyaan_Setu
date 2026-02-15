@@ -13,7 +13,7 @@ export default function Quizzes(): JSX.Element {
             {quizData.map((quiz: Quiz) => (
                 <TouchableOpacity
                     key={quiz.id}
-                    onPress={() => router.push(`/course/quiz/${quiz.id}`)}
+                    onPress={() => router.push(`/quiz/${quiz.id}`)}
                 >
                     <Card style={styles.card} variant="elevated">
                         <Text style={styles.title}>{quiz.title}</Text>

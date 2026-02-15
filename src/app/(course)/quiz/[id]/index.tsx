@@ -1,11 +1,13 @@
 import { Text, View } from "@/components/themed";
-import { StyleSheet } from "react-native";
-import { useRouter, useSearchParams } from "expo-router";
+import { StyleSheet, ScrollView } from "react-native";
+import { useLocalSearchParams } from "expo-router";
 import { quizData } from "@/content/courses/data/quizzes/data";
+import { Quiz } from "@/types/course";
 
 export default function QuizDetails(): JSX.Element {
-    const { id } = useSearchParams<{ id: string }>();
-    const quiz = quizData.find((q) => q.id === parseInt(id || "", 10));
+    const { id } = useLocalSearchParams<{ id: string }>();
+    const parsedId = id ? parseInt(id, 10) : null;
+    const quiz = parsedId ? quizData.find((q) => q.id === parsedId) : null;
 
     if (!quiz) {
         return (
@@ -16,7 +18,7 @@ export default function QuizDetails(): JSX.Element {
     }
 
     return (
-        <View style={styles.container}>
+        <ScrollView style={styles.container}>
             <Text style={styles.title}>{quiz.title}</Text>
             <Text style={styles.description}>{quiz.description}</Text>
             <View style={styles.questionsContainer}>
@@ -29,7 +31,7 @@ export default function QuizDetails(): JSX.Element {
                     </View>
                 ))}
             </View>
-        </View>
+        </ScrollView>
     );
 }
 
