@@ -11,6 +11,7 @@ import { BreakpointsProvider } from "@/context/breakpoints";
 import { CourseProvider } from "@/context/course";
 import { ProtectedRouteProvider } from "@/context/protected-route";
 import { ThemeProvider } from "@/context/theme";
+import SyncService from "@/services/sync.service";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -43,6 +44,17 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
+
+  // Initialize background sync service
+  useEffect(() => {
+    // console.log('[App] Initializing sync service...');
+    SyncService.startMonitoring();
+
+    return () => {
+      // console.log('[App] Cleaning up sync service...');
+      SyncService.stopMonitoring();
+    };
+  }, []);
 
   if (!fontsLoaded) {
     return null;

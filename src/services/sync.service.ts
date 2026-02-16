@@ -6,6 +6,7 @@ import { SyncQueueItem, SyncQueueInput } from '../types/store';
 
 const SYNC_INTERVAL_KEY = 'last_sync_time';
 const MIN_SYNC_INTERVAL = 30000; // 30 seconds minimum between syncs
+const BACKGROUND_SYNC_CHECK_INTERVAL = 5000; // Check every 5 seconds if there's data to sync
 
 /**
  * @abstract Methods to manage a queue which stores quiz results for syncing to MongoDB
@@ -13,6 +14,9 @@ const MIN_SYNC_INTERVAL = 30000; // 30 seconds minimum between syncs
 class SyncService {
     private isSyncing: boolean = false;
     private networkUnsubscribe: NetInfoSubscription | null = null;
+    private backgroundSyncInterval: NodeJS.Timeout | null = null;
+    private isNetworkAvailable: boolean = false;
+    private lastQueueCheckTime: number = 0;
 
     async addToQueue(queueItem: SyncQueueInput): Promise<void> {
         const data = {
@@ -44,21 +48,37 @@ class SyncService {
             const shouldSync = this.shouldSync(state);
             console.log('[Network Monitor] Should sync?', shouldSync);
 
+            this.isNetworkAvailable = shouldSync;
+
             if (shouldSync) {
-                console.log('[Network Monitor] Network is good, triggering sync...');
+                console.log('[Network Monitor] Network is good, starting background sync...');
+                this.startBackgroundSync();
+                // Try immediate sync on network restoration
                 try {
                     await this.performSync();
                 } catch (error) {
-                    console.error('[Network Monitor] Sync error:', error);
+                    console.error('[Network Monitor] Immediate sync error (non-blocking):', error);
                 }
+            } else {
+                console.log('[Network Monitor] Network is poor, stopping background sync...');
+                this.stopBackgroundSync();
             }
         });
+
+        // Initial network check
+        const state = await NetInfo.fetch();
+        this.isNetworkAvailable = this.shouldSync(state);
+        if (this.isNetworkAvailable) {
+            this.startBackgroundSync();
+        }
     }
 
     stopMonitoring(): void {
+        console.log('[Network Monitor] Stopping network monitoring');
         if (this.networkUnsubscribe) {
             this.networkUnsubscribe();
         }
+        this.stopBackgroundSync();
     }
 
     /** 
@@ -96,6 +116,106 @@ class SyncService {
 
         const timeSinceLastSync = Date.now() - parseInt(lastSync, 10);
         return timeSinceLastSync >= MIN_SYNC_INTERVAL;
+    }
+
+    /**
+     * @abstract Start background sync - checks for unsynced data periodically
+     */
+    private startBackgroundSync(): void {
+        if (this.backgroundSyncInterval !== null) {
+            console.log('[Background Sync] Background sync already running');
+            return;
+        }
+
+        console.log('[Background Sync] Starting background sync checks every', BACKGROUND_SYNC_CHECK_INTERVAL, 'ms');
+
+        this.backgroundSyncInterval = setInterval(async () => {
+            try {
+                await this.checkAndSyncQueue();
+            } catch (error) {
+                console.error('[Background Sync] Check failed:', error);
+            }
+        }, BACKGROUND_SYNC_CHECK_INTERVAL);
+    }
+
+    /**
+     * @abstract Stop background sync
+     */
+    private stopBackgroundSync(): void {
+        if (this.backgroundSyncInterval !== null) {
+            console.log('[Background Sync] Stopping background sync');
+            clearInterval(this.backgroundSyncInterval);
+            this.backgroundSyncInterval = null;
+        }
+    }
+
+    /**
+     * @abstract Check if background sync is currently active
+     */
+    isBackgroundSyncActive(): boolean {
+        return this.backgroundSyncInterval !== null;
+    }
+
+    /**
+     * @abstract Get background sync status
+     */
+    getBackgroundSyncStatus(): {
+        isActive: boolean;
+        isSyncing: boolean;
+        networkAvailable: boolean;
+    } {
+        return {
+            isActive: this.isBackgroundSyncActive(),
+            isSyncing: this.isSyncing,
+            networkAvailable: this.isNetworkAvailable,
+        };
+    }
+
+    /**
+     * @abstract Get pending sync items count
+     */
+    async getPendingSyncCount(): Promise<number> {
+        try {
+            await DatabaseService.init();
+            return DatabaseService.getPendingSyncCount();
+        } catch (error) {
+            console.error('[Sync] Error getting pending sync count:', error);
+            return 0;
+        }
+    }
+
+    /**
+     * @abstract Check if there's unsynced data and sync if conditions are met
+     */
+    private async checkAndSyncQueue(): Promise<void> {
+        // Don't check too frequently
+        const now = Date.now();
+        if (now - this.lastQueueCheckTime < 1000) {
+            return;
+        }
+        this.lastQueueCheckTime = now;
+
+        // Skip if sync already in progress
+        if (this.isSyncing) {
+            return;
+        }
+
+        // Skip if network not available
+        if (!this.isNetworkAvailable) {
+            return;
+        }
+
+        try {
+            await DatabaseService.init();
+            const queueItems = await DatabaseService.getSyncQueue() as SyncQueueItem[];
+
+            if (queueItems.length > 0) {
+                console.log(`[Background Sync] Found ${queueItems.length} unsynced items, starting sync...`);
+                await this.performSync(true); // Force sync to bypass throttle
+            }
+        } catch (error) {
+            console.error('[Background Sync] Error checking queue:', error);
+        }
     }
 
     /**

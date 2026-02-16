@@ -152,6 +152,13 @@ class DatabaseService {
         );
     }
 
+    async getPendingSyncCount(): Promise<number> {
+        const results = await this.query<{ count: number }>(
+            'SELECT COUNT(*) as count FROM sync_queue'
+        );
+        return results[0]?.count || 0;
+    }
+
     getDatabase(): ExpoSQLiteDatabase | null {
         return this.db;
     }
