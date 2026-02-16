@@ -35,7 +35,10 @@ export default function Quizzes(): JSX.Element {
             setSyncMessage({ type: "success", text: "Sync complete" });
             refreshStoredResults();
         } catch (err) {
-            const text = err instanceof Error ? err.message : "Sync failed";
+            let text = err instanceof Error ? err.message : "Sync failed";
+            if (text === "Network request failed" || text.includes("Network request failed")) {
+                text = "Cannot reach server. Set EXPO_PUBLIC_API_URL in .env and ensure the backend is running.";
+            }
             setSyncMessage({ type: "error", text });
         } finally {
             setSyncing(false);

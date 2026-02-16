@@ -7,6 +7,9 @@ import { SyncQueueItem, SyncQueueInput } from '../types/store';
 const SYNC_INTERVAL_KEY = 'last_sync_time';
 const MIN_SYNC_INTERVAL = 30000; // 30 seconds minimum between syncs
 
+/**
+ * @abstract Methods to manage a queue which stores quiz results for syncing to MongoDB
+ */
 class SyncService {
     private isSyncing: boolean = false;
     private networkUnsubscribe: NetInfoSubscription | null = null;
@@ -14,7 +17,6 @@ class SyncService {
     async addToQueue(queueItem: SyncQueueInput): Promise<void> {
         const data = {
             local_id: queueItem.local_id || null,
-            mongodb_id: queueItem.mongodb_id || null,
             table_name: queueItem.table_name,
             operation: queueItem.operation,
             data: queueItem.data || null,
@@ -22,15 +24,33 @@ class SyncService {
             retry_count: 0,
         };
 
+        console.log('[Queue] Adding item to sync queue:', { table: data.table_name, operation: data.operation, local_id: data.local_id });
         await DatabaseService.insert('sync_queue', data);
+        console.log('[Queue] Item added to sync queue successfully');
     }
 
+    /**
+     * @abstract Keeps a watch on change in the network state (stable <-> unstable)
+     */
     async startMonitoring(): Promise<void> {
+        console.log('[Network Monitor] Starting network monitoring');
         this.networkUnsubscribe = NetInfo.addEventListener(async (state: NetInfoState) => {
-            console.log('Network state changed:', state);
+            console.log('[Network Monitor] Network state changed:', {
+                isConnected: state.isConnected,
+                isInternetReachable: state.isInternetReachable,
+                type: state.type,
+            });
 
-            if (this.shouldSync(state)) {
-                await this.performSync();
+            const shouldSync = this.shouldSync(state);
+            console.log('[Network Monitor] Should sync?', shouldSync);
+
+            if (shouldSync) {
+                console.log('[Network Monitor] Network is good, triggering sync...');
+                try {
+                    await this.performSync();
+                } catch (error) {
+                    console.error('[Network Monitor] Sync error:', error);
+                }
             }
         });
     }
@@ -41,6 +61,9 @@ class SyncService {
         }
     }
 
+    /** 
+     * @abstract Check if network is stable enough for syncing
+     */
     private shouldSync(networkState: NetInfoState): boolean {
         // Check if connected
         if (!networkState.isConnected || !networkState.isInternetReachable) {
@@ -64,6 +87,9 @@ class SyncService {
         return false;
     }
 
+    /**
+     * @abstract Returns a boolean which tells if sufficient time interval has passed to sync again
+     */
     private async canSyncNow(): Promise<boolean> {
         const lastSync = await AsyncStorage.getItem(SYNC_INTERVAL_KEY);
         if (!lastSync) return true;
@@ -73,29 +99,33 @@ class SyncService {
     }
 
     /**
-     * Run sync: push queue then pull updates.
+     * Run sync: process the sync queue (push quiz results to server).
      * @param force If true, skip the 30s throttle (e.g. when user taps "Sync now").
      */
     async performSync(force?: boolean): Promise<void> {
         if (this.isSyncing) {
+            console.log('[Sync] Sync already in progress, skipping');
             throw new Error('Sync already in progress');
         }
 
         if (!force && !(await this.canSyncNow())) {
+            console.log('[Sync] Throttled: Too soon since last sync');
             throw new Error('Too soon since last sync. Try again in a moment.');
         }
 
         this.isSyncing = true;
-        console.log('Starting sync...');
+        console.log('[Sync] ===== START SYNC =====');
 
         try {
             await DatabaseService.init();
+            console.log('[Sync] Database initialized');
+
             await this.processSyncQueue();
-            await this.pullUpdates();
+
             await AsyncStorage.setItem(SYNC_INTERVAL_KEY, Date.now().toString());
-            console.log('Sync completed successfully');
+            console.log('[Sync] ===== SYNC COMPLETED SUCCESSFULLY =====');
         } catch (error) {
-            console.error('Sync error:', error);
+            console.error('[Sync] ===== SYNC FAILED =====', error);
             throw error;
         } finally {
             this.isSyncing = false;
@@ -105,14 +135,24 @@ class SyncService {
     private async processSyncQueue(): Promise<void> {
         const queueItems = await DatabaseService.getSyncQueue() as SyncQueueItem[];
 
+        console.log(`[Sync] Processing ${queueItems.length} items in queue`);
+
+        if (queueItems.length === 0) {
+            console.log('[Sync] Queue is empty, nothing to sync');
+            return;
+        }
+
         for (const item of queueItems) {
+            console.log(`[Sync] Processing queue item #${item.id}: ${item.operation} on ${item.table_name}`);
             try {
                 await this.syncQueueItem(item);
+                console.log(`[Sync] Successfully synced item #${item.id}`);
 
                 // Remove from queue on success
                 await DatabaseService.runSql('DELETE FROM sync_queue WHERE id = ?', [item.id]);
+                console.log(`[Sync] Deleted item #${item.id} from queue`);
             } catch (error) {
-                console.error('Error syncing queue item:', error);
+                console.error(`[Sync] Error syncing queue item #${item.id}:`, error);
 
                 const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
@@ -124,6 +164,7 @@ class SyncService {
 
                 // Remove from queue if too many retries
                 if (item.retry_count >= 5) {
+                    console.log(`[Sync] Item #${item.id} exceeded retry limit, removing from queue`);
                     await DatabaseService.runSql('DELETE FROM sync_queue WHERE id = ?', [item.id]);
                 }
             }
@@ -133,89 +174,32 @@ class SyncService {
     private async syncQueueItem(item: SyncQueueItem): Promise<void> {
         const { operation, table_name, local_id, data } = item;
 
+        console.log(`[SyncItem] Starting sync: operation=${operation}, table=${table_name}, local_id=${local_id}`);
+
+        if (table_name !== 'quiz_results') {
+            throw new Error(`Unsupported table: ${table_name}`);
+        }
+
         switch (operation) {
             case 'CREATE':
                 if (!data) throw new Error('No data for CREATE operation');
-                const createResult = await ApiService.createItem(JSON.parse(data));
-                // Update local record with MongoDB ID
+                console.log(`[SyncItem] Creating quiz result with data:`, data);
+                await ApiService.createQuizResult(JSON.parse(data));
+                console.log(`[SyncItem] Quiz result created successfully`);
+
+                // Mark as synced in local DB
                 if (local_id) {
+                    console.log(`[SyncItem] Marking quiz_results #${local_id} as synced`);
                     await DatabaseService.update(table_name, local_id, {
-                        mongodb_id: createResult._id,
                         is_synced: 1,
                     });
+                    console.log(`[SyncItem] Quiz result #${local_id} marked as synced`);
                 }
                 break;
 
             case 'UPDATE':
-                if (!local_id) throw new Error('No local_id for UPDATE operation');
-                if (!data) throw new Error('No data for UPDATE operation');
-
-                const mongoId = await this.getMongoIdForLocal(table_name, local_id);
-                if (mongoId) {
-                    await ApiService.updateItem(mongoId, JSON.parse(data));
-                    await DatabaseService.update(table_name, local_id, {
-                        is_synced: 1,
-                    });
-                }
-                break;
-
             case 'DELETE':
-                if (!local_id) throw new Error('No local_id for DELETE operation');
-
-                const deleteMongoId = await this.getMongoIdForLocal(table_name, local_id);
-                if (deleteMongoId) {
-                    await ApiService.deleteItem(deleteMongoId);
-                }
-                // Actually delete from local DB
-                await DatabaseService.runSql(`DELETE FROM ${table_name} WHERE id = ?`, [local_id]);
-                break;
-        }
-    }
-
-    private async getMongoIdForLocal(tableName: string, localId: number): Promise<string | null> {
-        const results = await DatabaseService.query<{ mongodb_id: string | null }>(
-            `SELECT mongodb_id FROM ${tableName} WHERE id = ?`,
-            [localId]
-        );
-        return results[0]?.mongodb_id || null;
-    }
-
-    private async pullUpdates(): Promise<void> {
-        const lastSync = await AsyncStorage.getItem(SYNC_INTERVAL_KEY);
-        const timestamp = lastSync ? parseInt(lastSync, 10) : 0;
-
-        // Get updates from server since last sync
-        const updates = await ApiService.getUpdates(timestamp);
-
-        for (const update of updates) {
-            // Check if item exists locally
-            const existing = await DatabaseService.query<{ id: number }>(
-                'SELECT id FROM items WHERE mongodb_id = ?',
-                [update._id]
-            );
-
-            if (existing.length > 0) {
-                // Update existing
-                await DatabaseService.update('items', existing[0].id, {
-                    name: update.name,
-                    description: update.description || '',
-                    data: JSON.stringify(update.data || {}),
-                    updated_at: new Date(update.updatedAt).getTime(),
-                    is_synced: 1,
-                    mongodb_id: update._id,
-                });
-            } else {
-                // Insert new
-                await DatabaseService.insert('items', {
-                    mongodb_id: update._id,
-                    name: update.name,
-                    description: update.description || '',
-                    data: JSON.stringify(update.data || {}),
-                    created_at: new Date(update.createdAt).getTime(),
-                    updated_at: new Date(update.updatedAt).getTime(),
-                    is_synced: 1,
-                });
-            }
+                throw new Error(`Operation ${operation} not supported for quiz results`);
         }
     }
 }
