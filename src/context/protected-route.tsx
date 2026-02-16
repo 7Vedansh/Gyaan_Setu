@@ -20,7 +20,6 @@ export function ProtectedRouteProvider({ children }: Props) {
     } else if (courseId && !(inCourseGroup || inLessonGroup)) {
       router.replace("/learn");
     }
-    console.log("run case of: segments");
   }, [segments]);
 
   return <>{children}</>;
