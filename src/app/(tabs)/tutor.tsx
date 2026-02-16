@@ -1,2 +1,5 @@
-import { TutorChat } from "@/features/ai-tutor/TutorChat";
-export default TutorChat;
+import { Redirect } from "expo-router";
+
+export default function TutorRoute() {
+    return <Redirect href="/tutor" />;
+}

@@ -19,18 +19,23 @@ export const courseConfig: CourseConfig = {
     },
     {
       icon: "shieldStar",
+      label: "Parth AI",
+      href: "/tutor",
+    },
+    {
+      icon: "shieldStar",
       label: "Leaderboards",
       href: "/leaderboards",
+    },
+    {
+      icon: "notebook",
+      label: "Quiz",
+      href: "/quiz",
     },
     {
       icon: "box",
       label: "Quests",
       href: "/quests",
-    },
-    {
-      icon: "shop",
-      label: "Shop",
-      href: "/shop",
     },
     {
       icon: "profile",
@@ -44,21 +49,16 @@ export const courseConfig: CourseConfig = {
       label: "Learn",
       href: "/learn",
     },
-    // {
-    //   icon: "languageSquare",
-    //   label: "Characters",
-    //   href: "/characters",
-    // },
+    {
+      icon: "shieldStar",
+      label: "Parth AI",
+      href: "/tutor",
+    },
     {
       icon: "shieldStar",
       label: "Leaderboards",
       href: "/leaderboards",
     },
-    // {
-    //   icon: "box",
-    //   label: "Quests",
-    //   href: "/quests",
-    // },
     {
       icon: "notebook",
       label: "Quiz",
