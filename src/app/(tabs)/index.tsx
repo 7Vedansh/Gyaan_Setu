@@ -1,2 +1,5 @@
-import { Dashboard } from "@/features/learn/Dashboard";
-export default Dashboard;
+import { Redirect } from "expo-router";
+
+export default function TabsIndex() {
+    return <Redirect href="/learn" />;
+}
