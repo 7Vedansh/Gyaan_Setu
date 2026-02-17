@@ -2,28 +2,48 @@ import { ViewStyle, TextStyle } from "react-native";
 
 export const theme = {
     colors: {
-        primary: "#6C47FF", // Playful Purple/Blue
-        secondary: "#FFB800", // Energetic Yellow/Orange
-        accent: "#FF6B6B", // Soft Red/Pink
-        background: "#F8F9FA", // Soft Paper White
-        surface: "#FFFFFF", // Pure White
+        primary: "#8B5CF6",       // Violet 500
+        primaryLight: "#A78BFA",
+        primaryDark: "#7C3AED",
+        secondary: "#8b15faff",     // Soft yellow accent
+        accent: "#EC4899",        // Soft pink highlight
+
+        background: "#1E293B",    // Slate 800
+        surface: "#263244",       // Custom Slate Surface
+
         text: {
-            primary: "#2D3748", // Dark Grey for readability
-            secondary: "#718096", // Soft Grey
-            inverse: "#FFFFFF",
+            primary: "#F8FAFC",     // Slate 50
+            secondary: "#CBD5E1",   // Slate 300
+            inverse: "#0B1120",
         },
+
+        // Compatibility aliases
+        foreground: "#F9FAFB",    // Same as text.primary
+        primaryForeground: "#F9FAFB",
+        secondaryForeground: "#0B1120",
+        muted: "#1F2937",
+        mutedForeground: "#9CA3AF",
+        accentForeground: "#0B1120",
+
+        destructive: "#EF4444",
+        destructiveForeground: "#F9FAFB",
+        sucess: "#22C55E",
+        sucessForeground: "#F9FAFB",
+
         status: {
-            success: "#48BB78",
-            warning: "#ECC94B",
-            error: "#F56565",
-            info: "#4299E1",
+            success: "#22C55E",
+            warning: "#FACC15",
+            error: "#EF4444",
+            info: "#3B82F6",
         },
-        border: "#E2E8F0",
+
+        border: "#334155",
     },
+
     typography: {
         fontFamily: {
-            heading: "VarelaRound", // Friendly rounded font (need to load this)
-            body: "Nunito", // Readable body font (need to load this)
+            heading: "NunitoExtraBold", // Duolingo-style bold headings
+            body: "Nunito", // Readable body font
         },
         sizes: {
             xs: 12,
@@ -75,12 +95,13 @@ export const theme = {
             elevation: 4,
         } as ViewStyle,
         lg: {
-            shadowColor: "#000",
+            shadowColor: "#7C3AED",
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.15,
-            shadowRadius: 8,
-            elevation: 8,
+            shadowOpacity: 0.4,
+            shadowRadius: 12,
+            elevation: 10,
         } as ViewStyle,
+
     },
 };
 

@@ -9,6 +9,8 @@ import { Quiz } from "@/types/course";
 import QuizService from "@/services/quiz.service";
 import SyncService from "@/services/sync.service";
 
+import { theme } from "@/theme/theme";
+
 export default function Quizzes(): JSX.Element {
     const router = useRouter();
     const [storedResults, setStoredResults] = useState<{ id: number; quiz_id: number; score: number; total_questions: number; created_at: number }[]>([]);
@@ -94,44 +96,48 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 16,
-        backgroundColor: "#f5f5f5",
+        backgroundColor: theme.colors.background,
     },
     card: {
         marginBottom: 16,
+        backgroundColor: theme.colors.surface,
     },
     title: {
         fontSize: 18,
         fontWeight: "bold",
         marginBottom: 8,
+        color: theme.colors.text.primary,
     },
     description: {
         fontSize: 14,
-        color: "#666",
+        color: theme.colors.text.secondary,
         marginBottom: 4,
     },
     subject: {
         fontSize: 12,
-        color: "#999",
+        color: theme.colors.text.secondary,
     },
     resultsSection: {
         marginBottom: 20,
         padding: 12,
-        backgroundColor: "#e8f4f8",
+        backgroundColor: theme.colors.surface,
         borderRadius: 8,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
     },
     resultsTitle: {
         fontSize: 14,
         fontWeight: "bold",
         marginBottom: 8,
-        color: "#333",
+        color: theme.colors.text.primary,
     },
     resultsEmpty: {
         fontSize: 12,
-        color: "#666",
+        color: theme.colors.text.secondary,
     },
     resultRow: {
         fontSize: 12,
-        color: "#333",
+        color: theme.colors.text.primary,
         marginBottom: 4,
     },
     syncSection: {
@@ -142,10 +148,10 @@ const styles = StyleSheet.create({
     },
     syncSuccess: {
         fontSize: 12,
-        color: "#2e7d32",
+        color: theme.colors.status.success,
     },
     syncError: {
         fontSize: 12,
-        color: "#c62828",
+        color: theme.colors.status.error,
     },
 });

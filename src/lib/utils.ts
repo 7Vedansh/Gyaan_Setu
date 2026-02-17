@@ -4,22 +4,35 @@ export function isWeb() {
   return Platform.OS === "web";
 }
 
-export function changeColorOpacity(rgbColor: string, opacity: number): string {
-  const regex = /(\d+),\s*(\d+),\s*(\d+)/;
-  const match = rgbColor.match(regex);
+export function changeColorOpacity(color: string, opacity: number): string {
+  const validOpacity = Math.min(1, Math.max(0, opacity));
 
-  if (match) {
-    const red = parseInt(match[1], 10);
-    const green = parseInt(match[2], 10);
-    const blue = parseInt(match[3], 10);
+  // HEX format
+  if (color.startsWith("#")) {
+    const hex = color.replace("#", "");
 
-    const validOpacity = Math.min(1, Math.max(0, opacity));
-    const rgbaColor = `rgba(${red}, ${green}, ${blue}, ${validOpacity})`;
+    const bigint = parseInt(hex, 16);
 
-    return rgbaColor;
-  } else {
-    throw new Error("Invalid RGB color format");
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+
+    return `rgba(${r}, ${g}, ${b}, ${validOpacity})`;
   }
+
+  // rgb() or rgba()
+  if (color.startsWith("rgb")) {
+    const values = color.match(/\d+/g);
+
+    if (!values || values.length < 3) {
+      throw new Error("Invalid RGB color format");
+    }
+
+    const [r, g, b] = values;
+    return `rgba(${r}, ${g}, ${b}, ${validOpacity})`;
+  }
+
+  throw new Error("Unsupported color format");
 }
 
 export function shuffleArray<T>(array: T[]): T[] {

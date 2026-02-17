@@ -11,11 +11,11 @@ const config: ExpoConfig = {
   orientation: "portrait",
   icon: "./src/assets/images/icon.jpg",
   scheme: "myapp",
-  userInterfaceStyle: "automatic",
+  userInterfaceStyle: "dark",
   splash: {
     image: "./src/assets/images/splash.png",
     resizeMode: "contain",
-    backgroundColor: "#DFEBF7",
+    backgroundColor: "#1E293B",
   },
   assetBundlePatterns: ["**/*"],
   ios: {
@@ -24,7 +24,7 @@ const config: ExpoConfig = {
   android: {
     adaptiveIcon: {
       foregroundImage: "./src/assets/images/adaptive-icon.jpg",
-      backgroundColor: "#DFEBF7",
+      backgroundColor: "#1E293B",
     },
   },
   web: {

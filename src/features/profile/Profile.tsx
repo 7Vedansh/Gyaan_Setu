@@ -55,7 +55,7 @@ export const Profile = () => {
                     label="Log Out"
                     variant="danger"
                     onPress={() => { }}
-                    leftIcon={<LogOut size={16} color="white" />}
+                    leftIcon={<LogOut size={16} color={theme.colors.text.primary} />}
                 />
             </View>
         </ScrollView>

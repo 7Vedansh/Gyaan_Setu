@@ -11,7 +11,8 @@ interface Props {
 }
 
 export function CourseRightBar({ courseId }: Props) {
-  const { border, muted, mutedForeground, secondary, primary } = useTheme();
+  const theme = useTheme() as any;
+  const { border, surface, muted, mutedForeground, primary } = theme;
   return (
     <View
       style={{
@@ -30,7 +31,7 @@ export function CourseRightBar({ courseId }: Props) {
           borderColor: border,
           padding: layouts.padding * 1.5,
           gap: layouts.padding * 1.5,
-          backgroundColor: secondary,
+          backgroundColor: surface,
           shadowColor: "#000",
           shadowOpacity: 0.04,
           shadowRadius: 8,
@@ -89,7 +90,7 @@ export function CourseRightBar({ courseId }: Props) {
           borderColor: border,
           padding: layouts.padding * 1.5,
           gap: layouts.padding * 1.5,
-          backgroundColor: secondary,
+          backgroundColor: surface,
           shadowColor: "#000",
           shadowOpacity: 0.04,
           shadowRadius: 8,

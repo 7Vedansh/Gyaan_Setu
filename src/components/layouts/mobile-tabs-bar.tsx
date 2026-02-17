@@ -50,8 +50,19 @@ interface TabItemProps {
   isActive: boolean;
 }
 
+// Helper to convert hex to rgba
+const hexToRgba = (hex: string, opacity: number) => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? `rgba(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}, ${opacity})`
+    : hex;
+};
+
+// ...
+
 function MobileTabItem({ navItem, isActive }: TabItemProps) {
-  const { border, accent, foreground } = useTheme();
+  const theme = useTheme() as any;
+  const { border, accent, foreground, primary, text } = theme;
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -84,20 +95,15 @@ function MobileTabItem({ navItem, isActive }: TabItemProps) {
             padding: layouts.padding * 0.75,
             borderWidth: layouts.borderWidth,
             borderRadius: layouts.radius,
-            borderColor: isActive ? border : colors.transparent,
+            borderColor: isActive ? hexToRgba(primary, 0.4) : colors.transparent,
             backgroundColor:
-              pressed || hovered || isActive ? accent : colors.transparent,
+              isActive ? hexToRgba(primary, 0.2) : pressed ? hexToRgba(primary, 0.1) : colors.transparent,
             transform: [{ scale: scaleAnim }],
-            shadowColor: "#000",
-            shadowOpacity: isActive ? 0.04 : 0,
-            shadowRadius: 3,
-            shadowOffset: { width: 0, height: 1 },
-            elevation: isActive ? 1 : 0,
           }}
         >
           <Icon
             name={navItem.icon}
-            color={isActive ? foreground : undefined}
+            color={isActive ? primary : text?.secondary}
           />
         </Animated.View>
       )}

@@ -39,8 +39,15 @@ export type SiteConfig = {
 
 export type Colors = {
   background: string;
+  text: {
+    primary: string;
+    secondary: string;
+    inverse: string;
+  };
   foreground: string;
   primary: string;
+  primaryLight?: string;
+  primaryDark?: string;
   primaryForeground: string;
   secondary: string;
   secondaryForeground: string;

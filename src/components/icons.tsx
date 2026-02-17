@@ -484,4 +484,40 @@ export const Icons = {
       />
     </Svg>
   ),
+  brain: ({ ...props }: SvgProps) => (
+    <Svg viewBox="0 0 24 24" fill="none" {...props}>
+      <Path
+        d="M9.5 2C11.5 2 13 3.5 13 3.5C13 3.5 14.5 2 16.5 2C19.5 2 21 4.5 21 7.5C21 9.5 19.5 11 19.5 11C19.5 11 21.5 12.5 21.5 15.5C21.5 18.5 19 21 16 21C13.5 21 12 19.5 12 19.5C12 19.5 10.5 21 8 21C5 21 2.5 18.5 2.5 15.5C2.5 12.5 4.5 11 4.5 11C4.5 11 3 9.5 3 7.5C3 4.5 4.5 2 7.5 2C9.5 2 9.5 3.5 9.5 3.5"
+        stroke={props.color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  ),
+  boxs: ({ ...props }: SvgProps) => (
+    <Svg viewBox="0 0 24 24" fill="none" {...props}>
+      <Path
+        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+        stroke={props.color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M3.27 6.96 12 12.01l8.73-5.05"
+        stroke={props.color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M12 22.08V12"
+        stroke={props.color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  ),
 };

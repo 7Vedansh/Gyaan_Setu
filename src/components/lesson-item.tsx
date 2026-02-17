@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
-import { Animated, Pressable, PressableProps } from "react-native";
+import { Animated, Pressable, PressableProps, StyleProp, View as NativeView, ViewStyle } from "react-native";
 import Popover from "react-native-popover-view/dist/Popover";
 
 import { Icon } from "@/components/icons";
@@ -32,6 +32,7 @@ export function LessonItem({
   courseProgression,
   ...props
 }: Props) {
+  const { style, ...pressableProps } = props;
   const {
     border,
     background,
@@ -89,6 +90,8 @@ export function LessonItem({
     }).start();
   };
 
+  const popoverAnchor = useRef<NativeView>(null);
+
   const {
     sectionId: sectionId,
     chapterId: chapterId,
@@ -97,24 +100,13 @@ export function LessonItem({
   } = courseProgression;
 
   return (
-    <Popover
-      isVisible={isVisiable}
-      onRequestClose={closePopover}
-      popoverStyle={{
-        borderRadius: layouts.radiusLg,
-        backgroundColor: border,
-        overflow: "hidden",
-      }}
-      backgroundStyle={{
-        backgroundColor: background,
-        opacity: 0.6,
-      }}
-      from={
+    <>
+      <NativeView ref={popoverAnchor} style={style as StyleProp<ViewStyle>}>
         <Pressable
           onPress={openPopover}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
-          {...props}
+          {...pressableProps}
         >
           {({ pressed }) => (
             <Animated.View
@@ -159,98 +151,117 @@ export function LessonItem({
             </Animated.View>
           )}
         </Pressable>
-      }
-    >
-      <View
-        style={{
-          padding: layouts.padding,
-          borderRadius: layouts.radiusLg,
-          width: 300,
-          borderWidth: layouts.borderWidth,
-          borderColor: border,
-          gap: layouts.padding,
-          backgroundColor: background,
-          shadowColor: "#000",
-          shadowOpacity: 0.12,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 6 },
-          elevation: 3,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            gap: layouts.padding,
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
+      </NativeView>
+
+      {popoverAnchor.current && (
+        <Popover
+          isVisible={isVisiable}
+          from={popoverAnchor}
+          onRequestClose={closePopover}
+          popoverStyle={{
+            borderRadius: layouts.radiusLg,
+            backgroundColor: border,
+            overflow: "hidden",
+          }}
+          backgroundStyle={{
+            backgroundColor: background,
+            opacity: 0.6,
           }}
         >
-          <Text
+          <View
             style={{
-              fontSize: 16,
-              fontWeight: "700",
-              color: isNotFinishedLesson ? mutedForeground : foreground,
-              letterSpacing: -0.2,
+              padding: layouts.padding,
+              borderRadius: layouts.radiusLg,
+              width: 300,
+              borderWidth: layouts.borderWidth,
+              borderColor: border,
+              gap: layouts.padding,
+              backgroundColor: background,
+              shadowColor: "#000",
+              shadowOpacity: 0.12,
+              shadowRadius: 12,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 3,
             }}
           >
-            {lessonDescription}
-          </Text>
-          {isCurrentLesson && (
+            {/* ... Content ... */}
+
             <View
               style={{
-                paddingVertical: layouts.padding / 2.5,
-                paddingHorizontal: layouts.padding * 0.75,
-                borderRadius: layouts.pill,
-                backgroundColor: accent,
-                shadowColor: "#000",
-                shadowOpacity: 0.05,
-                shadowRadius: 4,
-                shadowOffset: { width: 0, height: 2 },
-                elevation: 1,
+                flexDirection: "row",
+                gap: layouts.padding,
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
               }}
             >
               <Text
                 style={{
-                  textTransform: "uppercase",
+                  fontSize: 16,
                   fontWeight: "700",
-                  fontSize: 11,
-                  color: mutedForeground,
-                  letterSpacing: 0.5,
+                  color: isNotFinishedLesson ? mutedForeground : foreground,
+                  letterSpacing: -0.2,
                 }}
               >
-                {currentExercise.difficulty}
+                {lessonDescription}
               </Text>
+              {isCurrentLesson && (
+                <View
+                  style={{
+                    paddingVertical: layouts.padding / 2.5,
+                    paddingHorizontal: layouts.padding * 0.75,
+                    borderRadius: layouts.pill,
+                    backgroundColor: accent,
+                    shadowColor: "#000",
+                    shadowOpacity: 0.05,
+                    shadowRadius: 4,
+                    shadowOffset: { width: 0, height: 2 },
+                    elevation: 1,
+                  }}
+                >
+                  <Text
+                    style={{
+                      textTransform: "uppercase",
+                      fontWeight: "700",
+                      fontSize: 11,
+                      color: mutedForeground,
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    {currentExercise.difficulty}
+                  </Text>
+                </View>
+              )}
             </View>
-          )}
-        </View>
-        <Text style={{ color: mutedForeground, fontSize: 14, lineHeight: 20 }}>
-          {isFinishedLesson
-            ? "Prove your proficiency with Legendary"
-            : isNotFinishedLesson
-              ? "Complete all levels above to unlock this!"
-              : `Exercise ${currentExercise.id} of ${totalExercise}`}
-        </Text>
-        <Button
-          onPress={() => {
-            closePopover();
-            if (isFinishedLesson) {
-              router.push(
-                `/pratice/${sectionId}/${chapterId}/${lessonId}/${exerciseId}`
-              );
-            } else {
-              router.push("/lesson");
-            }
-          }}
-          disabled={isNotFinishedLesson}
-        >
-          {isFinishedLesson
-            ? `Practice +${currentExercise.xp / 2} xp`
-            : isNotFinishedLesson
-              ? "Locked"
-              : `Start +${currentExercise.xp} xp`}
-        </Button>
-      </View>
-    </Popover>
+            <Text style={{ color: mutedForeground, fontSize: 14, lineHeight: 20 }}>
+              {isFinishedLesson
+                ? "Prove your proficiency with Legendary"
+                : isNotFinishedLesson
+                  ? "Complete all levels above to unlock this!"
+                  : `Exercise ${currentExercise.id} of ${totalExercise}`}
+            </Text>
+            <Button
+              onPress={() => {
+                closePopover();
+                if (isFinishedLesson) {
+                  router.push(
+                    `/pratice/${sectionId}/${chapterId}/${lessonId}/${exerciseId}`
+                  );
+                } else {
+                  router.push("/lesson");
+                }
+              }}
+              disabled={isNotFinishedLesson}
+            >
+              {isFinishedLesson
+                ? `Practice +${currentExercise.xp / 2} xp`
+                : isNotFinishedLesson
+                  ? "Locked"
+                  : `Start +${currentExercise.xp} xp`}
+            </Button>
+          </View>
+        </Popover>
+      )}
+    </>
   );
 }

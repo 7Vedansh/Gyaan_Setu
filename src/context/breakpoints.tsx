@@ -28,11 +28,10 @@ function useDevice() {
     { name: "2xl", maxWidth: 1536 },
   ];
 
-  // Initialize with a safe default that matches server-side rendering
-  const [activeBreakpoint, setActiveBreakpoint] = useState<Breakpoints>("sm");
+  const [activeBreakpoint, setActiveBreakpoint] =
+    useState<Breakpoints>("sm");
 
   useEffect(() => {
-    // This function runs only on the client
     const getActiveBreakpoint = () => {
       const screenWidth = isWeb()
         ? window.innerWidth
@@ -41,12 +40,12 @@ function useDevice() {
       const matchingBreakpoint = breakpoints.find(
         (breakpoint) => screenWidth <= breakpoint.maxWidth
       );
+
       return matchingBreakpoint
         ? (matchingBreakpoint.name as Breakpoints)
         : (breakpoints[breakpoints.length - 1].name as Breakpoints);
     };
 
-    // Set initial correct breakpoint
     setActiveBreakpoint(getActiveBreakpoint());
 
     const handleResize = () => {
@@ -62,10 +61,13 @@ function useDevice() {
         window.removeEventListener("resize", handleResize);
       };
     } else {
-      const { Dimensions } = require("react-native");
-      Dimensions.addEventListener("change", handleResize);
+      const subscription = Dimensions.addEventListener(
+        "change",
+        handleResize
+      );
+
       return () => {
-        Dimensions.removeEventListener("change", handleResize);
+        subscription?.remove(); // ✅ Modern cleanup
       };
     }
   }, []);

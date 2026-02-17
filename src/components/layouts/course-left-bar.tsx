@@ -8,6 +8,7 @@ import { colors } from "@/constants/colors";
 import { layouts } from "@/constants/layouts";
 import { useBreakpoint } from "@/context/breakpoints";
 import { useTheme } from "@/context/theme";
+import { theme } from "@/theme/theme";
 import { NavItem } from "@/types";
 
 interface Props {
@@ -36,18 +37,18 @@ export function CourseLeftBar({ navItems, appName }: Props) {
           paddingLeft: layouts.padding * 2,
         }}
       >
-          {breakpoint == "xl" || breakpoint == "2xl" ? (
+        {breakpoint == "xl" || breakpoint == "2xl" ? (
           <TextLogo size={28} />
         ) : (
           <Text
             style={{
+              fontFamily: theme.typography.fontFamily.heading,
               fontSize: 22,
-              fontWeight: "700",
               color: primary,
               letterSpacing: -0.3,
             }}
           >
-            {appName.charAt(0).toLowerCase()}
+            {appName}
           </Text>
         )}
       </Link>
@@ -63,13 +64,50 @@ interface NavItemProps {
   pathname: string;
 }
 
+
+// ... (imports remain)
+
+const sidebarColors: Record<string, string> = {
+  learn: "#8B5CF6",
+  characters: "#FACC15",
+  "parth ai": "#38BDF8",
+  leaderboards: "#F97316",
+  quiz: "#22C55E",
+  target: "#A78BFA",
+  quests: "#A78BFA",
+  profile: "#60A5FA",
+};
+
+// Helper to convert hex to rgba
+const hexToRgba = (hex: string, opacity: number) => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? `rgba(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}, ${opacity})`
+    : hex;
+};
+
 function NavItemComponent({ navItem, pathname }: NavItemProps) {
-  const { border, accent, foreground } = useTheme();
+  const themeContext = useTheme() as any; // renamed to avoid conflict
+  const { text } = themeContext;
   const breakpoint = useBreakpoint();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
+  const getColor = (label: string) => {
+    const normalized = label.toLowerCase();
+    if (normalized.includes("learn")) return sidebarColors.learn;
+    if (normalized.includes("char")) return sidebarColors.characters;
+    if (normalized.includes("tutor") || normalized.includes("ai") || normalized.includes("parth")) return sidebarColors["parth ai"];
+    if (normalized.includes("leader")) return sidebarColors.leaderboards;
+    if (normalized.includes("quiz")) return sidebarColors.quiz;
+    if (normalized.includes("quest") || normalized.includes("target")) return sidebarColors.target;
+    if (normalized.includes("profile")) return sidebarColors.profile;
+    return themeContext?.primary || "#8B5CF6"; // Fallback
+  };
+
+  const activeColor = getColor(navItem.label);
+
   const isActive =
-    pathname === navItem.href || pathname.startsWith(navItem.href);
+    pathname === navItem.href || (pathname.startsWith(navItem.href) && navItem.href !== "/");
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -89,6 +127,24 @@ function NavItemComponent({ navItem, pathname }: NavItemProps) {
     }).start();
   };
 
+  // Icon Container Size
+  const iconSize = 24; // Standard
+  // Icon Badge
+  const IconBadge = () => (
+    <View
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: hexToRgba(activeColor, 0.2),
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Icon name={navItem.icon} color={activeColor} size={22} />
+    </View>
+  );
+
   return (
     <Pressable
       onPress={() => router.push(navItem.href)}
@@ -99,36 +155,30 @@ function NavItemComponent({ navItem, pathname }: NavItemProps) {
         <Animated.View
           style={{
             flexDirection: "row",
-            gap: layouts.padding,
+            gap: 16,
             alignItems: "center",
-            paddingHorizontal:
-              breakpoint == "xl" || breakpoint == "2xl"
-                ? layouts.padding * 1.5
-                : layouts.padding,
-            paddingVertical: layouts.padding * 0.75,
-            borderWidth: layouts.borderWidth,
-            borderRadius: layouts.radius,
-            borderColor: isActive ? border : colors.transparent,
-            backgroundColor:
-              pressed || hovered || isActive ? accent : colors.transparent,
+            paddingHorizontal: 12, // Compact padding inside the item
+            paddingVertical: 8,
+            borderRadius: 16,
+            backgroundColor: isActive
+              ? hexToRgba(activeColor, 0.25)
+              : hovered
+                ? hexToRgba(activeColor, 0.1)
+                : "transparent",
             transform: [{ scale: scaleAnim }],
-            shadowColor: "#000",
-            shadowOpacity: isActive ? 0.05 : 0,
-            shadowRadius: 4,
-            shadowOffset: { width: 0, height: 2 },
-            elevation: isActive ? 1 : 0,
+            marginBottom: 4,
           }}
         >
-          <Icon
-            name={navItem.icon}
-            color={isActive ? foreground : undefined}
-          />
+          <IconBadge />
           {(breakpoint == "xl" || breakpoint == "2xl") && (
             <Text
               style={{
-                fontWeight: "700",
-                fontSize: 14,
-                letterSpacing: -0.2,
+                fontFamily: theme.typography.fontFamily.heading, // "Nunito-ExtraBold" for sidebar items mostly uppercase/bold in Duolingo
+                fontSize: 15,
+                color: isActive ? activeColor : text?.secondary,
+                fontWeight: "800", // ExtraBold
+                letterSpacing: 0.5,
+                textTransform: "uppercase",
               }}
             >
               {navItem.label}

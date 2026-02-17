@@ -113,7 +113,8 @@ export default function Learn() {
           const isFinishedLesson =
             (isCurrentChapter && lessonIndex < courseProgress.lessonId) ||
             chapterIndex < courseProgress.chapterId;
-          const currentExercise = lession.exercises[courseProgress.exerciseId];
+          const currentExercise =
+            lession.exercises[isCurrentLesson ? courseProgress.exerciseId : 0];
 
           if (!currentExercise) return null;
 

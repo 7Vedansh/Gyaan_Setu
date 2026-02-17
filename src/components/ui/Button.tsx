@@ -59,14 +59,14 @@ export const Button = ({
             case "primary":
             case "default": // Backward compatibility
             case "danger":
-                return theme.colors.text.inverse;
-            case "secondary":
                 return theme.colors.text.primary;
+            case "secondary":
+                return theme.colors.text.inverse;
             case "outline":
             case "ghost":
                 return theme.colors.primary;
             default:
-                return theme.colors.text.inverse;
+                return theme.colors.text.primary;
         }
     };
 

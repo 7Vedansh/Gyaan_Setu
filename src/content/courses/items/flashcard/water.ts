@@ -4,7 +4,7 @@ export const waterFlashCard: FlashCardExercise = {
   id: 1,
   type: "flashCard",
   question: {
-    en: 'Which one of these is "water"?',
+    en: 'इनमें से कौन सा "पानी" है?',
   },
   words: [
     {

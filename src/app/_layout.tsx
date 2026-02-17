@@ -4,7 +4,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { useFonts as useVarela, VarelaRound_400Regular } from "@expo-google-fonts/varela-round";
-import { useFonts as useNunito, Nunito_400Regular, Nunito_700Bold } from "@expo-google-fonts/nunito";
+import { useFonts as useNunito, Nunito_400Regular, Nunito_700Bold, Nunito_800ExtraBold } from "@expo-google-fonts/nunito";
 
 import { StatusBar } from "@/components/status-bar";
 import { BreakpointsProvider } from "@/context/breakpoints";
@@ -31,6 +31,7 @@ export default function RootLayout() {
     VarelaRound: VarelaRound_400Regular,
     Nunito: Nunito_400Regular,
     NunitoBold: Nunito_700Bold,
+    NunitoExtraBold: Nunito_800ExtraBold,
     ...FontAwesome.font,
   });
 

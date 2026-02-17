@@ -9,6 +9,14 @@ import QuizService from "@/services/quiz.service";
 import { QuizResultAnswer } from "@/types/store";
 import { theme } from "@/theme/theme";
 
+// Helper to convert hex to rgba
+const hexToRgba = (hex: string, opacity: number) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+        ? `rgba(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}, ${opacity})`
+        : hex;
+};
+
 export default function QuizDetails(): JSX.Element {
     const { id } = useLocalSearchParams<{ id: string }>();
     const parsedId = id ? parseInt(id, 10) : null;
@@ -181,16 +189,17 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 16,
-        backgroundColor: "#f5f5f5",
+        backgroundColor: theme.colors.background,
     },
     title: {
         fontSize: 24,
         fontWeight: "bold",
         marginBottom: 16,
+        color: theme.colors.text.primary,
     },
     description: {
         fontSize: 16,
-        color: "#666",
+        color: theme.colors.text.secondary,
         marginBottom: 16,
     },
     questionsContainer: {
@@ -199,17 +208,15 @@ const styles = StyleSheet.create({
     questionCard: {
         marginBottom: 16,
         padding: 12,
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.surface,
         borderRadius: 8,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        ...theme.shadows.md,
     },
     question: {
         fontSize: 16,
         fontWeight: "bold",
         marginBottom: 8,
+        color: theme.colors.text.primary,
     },
     optionRow: {
         flexDirection: "row",
@@ -218,10 +225,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         marginBottom: 4,
         borderRadius: 8,
-        backgroundColor: "#f9f9f9",
+        backgroundColor: theme.colors.background,
     },
     optionRowSelected: {
-        backgroundColor: theme.colors.primary + "15",
+        backgroundColor: hexToRgba(theme.colors.primary, 0.15),
         borderWidth: 1,
         borderColor: theme.colors.primary,
     },
@@ -230,7 +237,7 @@ const styles = StyleSheet.create({
         height: 22,
         borderRadius: 11,
         borderWidth: 2,
-        borderColor: theme.colors.border,
+        borderColor: theme.colors.text.secondary,
         alignItems: "center",
         justifyContent: "center",
         marginRight: 12,
@@ -246,7 +253,7 @@ const styles = StyleSheet.create({
     },
     optionText: {
         fontSize: 14,
-        color: "#333",
+        color: theme.colors.text.primary,
         flex: 1,
     },
     submitButton: {
@@ -255,11 +262,11 @@ const styles = StyleSheet.create({
     },
     error: {
         fontSize: 18,
-        color: "red",
+        color: theme.colors.status.error,
         textAlign: "center",
     },
     resultCard: {
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.surface,
         padding: 20,
         borderRadius: 12,
         marginBottom: 24,
