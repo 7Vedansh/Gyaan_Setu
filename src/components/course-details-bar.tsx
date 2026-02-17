@@ -11,7 +11,7 @@ interface Props extends ViewProps {
 }
 
 export function CourseDetailsBar({ courseId, style, ...props }: Props) {
-  const { accent, accentForeground, mutedForeground, primary } = useTheme();
+  const { primary } = useTheme();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const animatePress = () => {
@@ -49,7 +49,7 @@ export function CourseDetailsBar({ courseId, style, ...props }: Props) {
           paddingHorizontal: layouts.padding,
           paddingVertical: layouts.padding * 0.5,
           borderRadius: layouts.pill,
-          backgroundColor: accent,
+          backgroundColor: "#12344a",
           shadowColor: primary,
           shadowOpacity: 0.1,
           shadowRadius: 4,
@@ -61,7 +61,7 @@ export function CourseDetailsBar({ courseId, style, ...props }: Props) {
           style={{
             fontWeight: "700",
             fontSize: 11,
-            color: accentForeground,
+            color: "#8fd8ff",
             textTransform: "uppercase",
             letterSpacing: 0.6,
           }}
@@ -81,7 +81,7 @@ export function CourseDetailsBar({ courseId, style, ...props }: Props) {
         <Pressable onPress={animatePress}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
             <Icon name="fire" />
-            <Text style={{ fontWeight: "700", fontSize: 14 }}>356</Text>
+            <Text style={{ fontWeight: "700", fontSize: 14, color: "#eaf6ff" }}>356</Text>
           </View>
         </Pressable>
       </Animated.View>
@@ -97,7 +97,7 @@ export function CourseDetailsBar({ courseId, style, ...props }: Props) {
         <Pressable onPress={animatePress}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
             <Icon name="donut" />
-            <Text style={{ fontWeight: "700", fontSize: 14 }}>500</Text>
+            <Text style={{ fontWeight: "700", fontSize: 14, color: "#eaf6ff" }}>500</Text>
           </View>
         </Pressable>
       </Animated.View>
@@ -113,7 +113,7 @@ export function CourseDetailsBar({ courseId, style, ...props }: Props) {
         <Pressable onPress={animatePress}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
             <Icon name="heart" />
-            <Text style={{ fontWeight: "700", fontSize: 14 }}>5</Text>
+            <Text style={{ fontWeight: "700", fontSize: 14, color: "#eaf6ff" }}>5</Text>
           </View>
         </Pressable>
       </Animated.View>

@@ -8,7 +8,6 @@ import { colors } from "@/constants/colors";
 import { layouts } from "@/constants/layouts";
 import { useBreakpoint } from "@/context/breakpoints";
 import { useTheme } from "@/context/theme";
-import { theme } from "@/theme/theme";
 import { NavItem } from "@/types";
 
 interface Props {
@@ -17,7 +16,7 @@ interface Props {
 }
 
 export function CourseLeftBar({ navItems, appName }: Props) {
-  const { border, accent, foreground, primary } = useTheme();
+  const { foreground, primary } = useTheme();
   const breakpoint = useBreakpoint();
   const pathname = usePathname();
 
@@ -26,8 +25,9 @@ export function CourseLeftBar({ navItems, appName }: Props) {
       style={{
         padding: layouts.padding,
         borderRightWidth: layouts.borderWidth,
-        borderRightColor: border,
+        borderRightColor: "#1f3b52",
         gap: layouts.padding,
+        backgroundColor: "#0a2233",
       }}
     >
       <Link
@@ -42,13 +42,13 @@ export function CourseLeftBar({ navItems, appName }: Props) {
         ) : (
           <Text
             style={{
-              fontFamily: theme.typography.fontFamily.heading,
               fontSize: 22,
+              fontWeight: "700",
               color: primary,
               letterSpacing: -0.3,
             }}
           >
-            {appName}
+            {appName.charAt(0).toLowerCase()}
           </Text>
         )}
       </Link>
@@ -64,50 +64,23 @@ interface NavItemProps {
   pathname: string;
 }
 
-
-// ... (imports remain)
-
-const sidebarColors: Record<string, string> = {
-  learn: "#8B5CF6",
-  characters: "#FACC15",
-  "parth ai": "#38BDF8",
-  leaderboards: "#F97316",
-  quiz: "#22C55E",
-  target: "#A78BFA",
-  quests: "#A78BFA",
-  profile: "#60A5FA",
-};
-
-// Helper to convert hex to rgba
-const hexToRgba = (hex: string, opacity: number) => {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? `rgba(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}, ${opacity})`
-    : hex;
+const NAV_ICON_COLORS: Record<string, string> = {
+  LEARN: "#ffb020",
+  CHARACTERS: "#4cc9ff",
+  "PARTH AI": "#8b5cf6",
+  LEADERBOARDS: "#facc15",
+  PRACTICE: "#22c55e",
+  TARGET: "#f97316",
+  PROFILE: "#60a5fa",
 };
 
 function NavItemComponent({ navItem, pathname }: NavItemProps) {
-  const themeContext = useTheme() as any; // renamed to avoid conflict
-  const { text } = themeContext;
+  const { foreground } = useTheme();
   const breakpoint = useBreakpoint();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  const getColor = (label: string) => {
-    const normalized = label.toLowerCase();
-    if (normalized.includes("learn")) return sidebarColors.learn;
-    if (normalized.includes("char")) return sidebarColors.characters;
-    if (normalized.includes("tutor") || normalized.includes("ai") || normalized.includes("parth")) return sidebarColors["parth ai"];
-    if (normalized.includes("leader")) return sidebarColors.leaderboards;
-    if (normalized.includes("quiz")) return sidebarColors.quiz;
-    if (normalized.includes("quest") || normalized.includes("target")) return sidebarColors.target;
-    if (normalized.includes("profile")) return sidebarColors.profile;
-    return themeContext?.primary || "#8B5CF6"; // Fallback
-  };
-
-  const activeColor = getColor(navItem.label);
-
   const isActive =
-    pathname === navItem.href || (pathname.startsWith(navItem.href) && navItem.href !== "/");
+    pathname === navItem.href || pathname.startsWith(navItem.href);
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -127,24 +100,6 @@ function NavItemComponent({ navItem, pathname }: NavItemProps) {
     }).start();
   };
 
-  // Icon Container Size
-  const iconSize = 24; // Standard
-  // Icon Badge
-  const IconBadge = () => (
-    <View
-      style={{
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        backgroundColor: hexToRgba(activeColor, 0.2),
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <Icon name={navItem.icon} color={activeColor} size={22} />
-    </View>
-  );
-
   return (
     <Pressable
       onPress={() => router.push(navItem.href)}
@@ -155,30 +110,37 @@ function NavItemComponent({ navItem, pathname }: NavItemProps) {
         <Animated.View
           style={{
             flexDirection: "row",
-            gap: 16,
+            gap: layouts.padding,
             alignItems: "center",
-            paddingHorizontal: 12, // Compact padding inside the item
-            paddingVertical: 8,
-            borderRadius: 16,
-            backgroundColor: isActive
-              ? hexToRgba(activeColor, 0.25)
-              : hovered
-                ? hexToRgba(activeColor, 0.1)
-                : "transparent",
+            paddingHorizontal:
+              breakpoint == "xl" || breakpoint == "2xl"
+                ? layouts.padding * 1.5
+                : layouts.padding,
+            paddingVertical: layouts.padding * 0.75,
+            borderWidth: layouts.borderWidth,
+            borderRadius: layouts.radius,
+            borderColor: isActive ? "#3ba5e8" : colors.transparent,
+            backgroundColor:
+              pressed || hovered || isActive ? "#15374d" : colors.transparent,
             transform: [{ scale: scaleAnim }],
-            marginBottom: 4,
+            shadowColor: "#000",
+            shadowOpacity: isActive ? 0.05 : 0,
+            shadowRadius: 4,
+            shadowOffset: { width: 0, height: 2 },
+            elevation: isActive ? 1 : 0,
           }}
         >
-          <IconBadge />
+          <Icon
+            name={navItem.icon}
+            color={isActive ? foreground : NAV_ICON_COLORS[navItem.label] || "#8fd8ff"}
+          />
           {(breakpoint == "xl" || breakpoint == "2xl") && (
             <Text
               style={{
-                fontFamily: theme.typography.fontFamily.heading, // "Nunito-ExtraBold" for sidebar items mostly uppercase/bold in Duolingo
-                fontSize: 15,
-                color: isActive ? activeColor : text?.secondary,
-                fontWeight: "800", // ExtraBold
-                letterSpacing: 0.5,
-                textTransform: "uppercase",
+                fontWeight: "700",
+                fontSize: 14,
+                color: "#eaf6ff",
+                letterSpacing: -0.2,
               }}
             >
               {navItem.label}

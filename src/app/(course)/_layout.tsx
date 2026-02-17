@@ -19,8 +19,8 @@ export default function CourseLayout() {
 
   return (
     <Shell>
-      <Container layout="lg">
-        <View style={{ flexDirection: "row", flex: 1 }}>
+      <Container layout="lg" style={{ backgroundColor: "#071826" }}>
+        <View style={{ flexDirection: "row", flex: 1, backgroundColor: "#071826" }}>
           {breakpoint !== "sm" && (
             <CourseLeftBar
               appName={siteConfig.name}

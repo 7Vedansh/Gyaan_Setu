@@ -18,7 +18,7 @@ export const courseConfig: CourseConfig = {
       href: "/characters",
     },
     {
-      icon: "brain",
+      icon: "targetCircle",
       label: "PARTH AI",
       href: "/tutor",
     },
@@ -28,12 +28,12 @@ export const courseConfig: CourseConfig = {
       href: "/leaderboards",
     },
     {
-      icon: "notebook",
-      label: "QUIZ",
+      icon: "bolt",
+      label: "PRACTICE",
       href: "/quiz",
     },
     {
-      icon: "boxs",
+      icon: "box",
       label: "TARGET",
       href: "/quests",
     },
@@ -50,7 +50,7 @@ export const courseConfig: CourseConfig = {
       href: "/learn",
     },
     {
-      icon: "brain",
+      icon: "targetCircle",
       label: "PARTH AI",
       href: "/tutor",
     },
@@ -61,7 +61,7 @@ export const courseConfig: CourseConfig = {
     },
     {
       icon: "notebook",
-      label: "QUIZ",
+      label: "PRACTICE",
       href: "/quiz",
     },
     {

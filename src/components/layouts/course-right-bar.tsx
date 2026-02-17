@@ -11,16 +11,16 @@ interface Props {
 }
 
 export function CourseRightBar({ courseId }: Props) {
-  const theme = useTheme() as any;
-  const { border, surface, muted, mutedForeground, primary } = theme;
+  const { muted, mutedForeground, primary } = useTheme();
   return (
     <View
       style={{
         padding: layouts.padding,
         borderLeftWidth: layouts.borderWidth,
-        borderLeftColor: border,
+        borderLeftColor: "#1f3b52",
         flexShrink: 0,
         gap: layouts.padding,
+        backgroundColor: "#0a2233",
       }}
     >
       <CourseDetailsBar courseId={courseId} />
@@ -28,10 +28,10 @@ export function CourseRightBar({ courseId }: Props) {
         style={{
           borderRadius: layouts.radiusLg,
           borderWidth: layouts.borderWidth,
-          borderColor: border,
+          borderColor: "#2a4961",
           padding: layouts.padding * 1.5,
           gap: layouts.padding * 1.5,
-          backgroundColor: surface,
+          backgroundColor: "#0d283d",
           shadowColor: "#000",
           shadowOpacity: 0.04,
           shadowRadius: 8,
@@ -45,7 +45,7 @@ export function CourseRightBar({ courseId }: Props) {
             justifyContent: "space-between",
           }}
         >
-          <Text style={{ fontSize: 14, fontWeight: "700", letterSpacing: -0.2 }}>Daily Quests</Text>
+          <Text style={{ fontSize: 14, fontWeight: "700", letterSpacing: -0.2, color: "#eaf6ff" }}>Daily Quests</Text>
           <Text
             style={{
               color: primary,
@@ -60,20 +60,20 @@ export function CourseRightBar({ courseId }: Props) {
         <View style={{ flexDirection: "row", gap: layouts.padding }}>
           <Icon name="bolt" size={56} />
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 14, fontWeight: "600" }}>Earn 10 XP</Text>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: "#eaf6ff" }}>Earn 10 XP</Text>
             <View style={{ flexDirection: "row", gap: layouts.padding * 0.5 }}>
               <View style={{ flex: 1, justifyContent: "center" }}>
                 <View
                   style={{
                     height: 14,
-                    backgroundColor: muted,
+                    backgroundColor: "#294255",
                     alignItems: "center",
                     justifyContent: "center",
                     borderTopLeftRadius: layouts.pill,
                     borderBottomLeftRadius: layouts.pill,
                   }}
                 >
-                  <Text style={{ fontSize: 11, color: mutedForeground, fontWeight: "600" }}>
+                  <Text style={{ fontSize: 11, color: "#d1e8fa", fontWeight: "600" }}>
                     0 / 10
                   </Text>
                 </View>
@@ -87,10 +87,10 @@ export function CourseRightBar({ courseId }: Props) {
         style={{
           borderRadius: layouts.radiusLg,
           borderWidth: layouts.borderWidth,
-          borderColor: border,
+          borderColor: "#2a4961",
           padding: layouts.padding * 1.5,
           gap: layouts.padding * 1.5,
-          backgroundColor: surface,
+          backgroundColor: "#0d283d",
           shadowColor: "#000",
           shadowOpacity: 0.04,
           shadowRadius: 8,
@@ -102,6 +102,7 @@ export function CourseRightBar({ courseId }: Props) {
           style={{
             fontSize: 14,
             fontWeight: "700",
+            color: "#eaf6ff",
             maxWidth: 256,
             letterSpacing: -0.2,
           }}
@@ -115,5 +116,4 @@ export function CourseRightBar({ courseId }: Props) {
       </View>
     </View>
   );
-
 }
