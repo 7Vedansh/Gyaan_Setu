@@ -44,3 +44,7 @@ dist/
 archive/
 .vercel
 .env
+
+.pyc
+.pkl
+.faiss
