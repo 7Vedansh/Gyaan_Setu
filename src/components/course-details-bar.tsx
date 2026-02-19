@@ -5,12 +5,15 @@ import { Text, View, ViewProps } from "@/components/themed";
 import { layouts } from "@/constants/layouts";
 import { useTheme } from "@/context/theme";
 import { SupportedLanguageCode } from "@/types";
+import { useStreak } from "@/hooks/useStreak";
+import { StreakBadge } from "@/components/StreakBadge";
 
 interface Props extends ViewProps {
   courseId: SupportedLanguageCode;
 }
 
 export function CourseDetailsBar({ courseId, style, ...props }: Props) {
+  const { currentStreak } = useStreak();
   const { primary } = useTheme();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -72,17 +75,11 @@ export function CourseDetailsBar({ courseId, style, ...props }: Props) {
 
       <Animated.View
         style={{
-          flexDirection: "row",
-          alignItems: "center",
-          gap: layouts.padding * 0.5,
           transform: [{ scale: scaleAnim }],
         }}
       >
-        <Pressable onPress={animatePress}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <Icon name="fire" />
-            <Text style={{ fontWeight: "700", fontSize: 14, color: "#eaf6ff" }}>356</Text>
-          </View>
+        <Pressable onPress={() => console.log("Open streak details")}>
+          <StreakBadge streak={currentStreak} />
         </Pressable>
       </Animated.View>
 
