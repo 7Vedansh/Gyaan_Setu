@@ -1,27 +1,22 @@
 import { useEffect, useState } from "react";
+import NetInfo from "@react-native-community/netinfo";
 
 export function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof navigator === "undefined") {
-      return;
-    }
+    // Get the initial connection state
+    NetInfo.fetch().then((state) => {
+      setIsOnline(state.isConnected ?? true);
+    });
 
-    const updateStatus = () => {
-      setIsOnline(
-        typeof navigator.onLine === "boolean" ? navigator.onLine : true
-      );
-    };
-
-    updateStatus();
-
-    window.addEventListener("online", updateStatus);
-    window.addEventListener("offline", updateStatus);
+    // Subscribe to connection changes
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsOnline(state.isConnected ?? true);
+    });
 
     return () => {
-      window.removeEventListener("online", updateStatus);
-      window.removeEventListener("offline", updateStatus);
+      unsubscribe();
     };
   }, []);
 

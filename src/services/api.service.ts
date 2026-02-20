@@ -17,7 +17,7 @@ async function request<T>(
         ).toString();
         url += `?${search}`;
     }
-    console.log('[API Request]', url, fetchOptions.method || 'GET');
+    // console.log('[API Request]', url, fetchOptions.method || 'GET');
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -61,13 +61,13 @@ interface QuizResultInput {
 
 class ApiService {
     async createQuizResult(data: QuizResultInput): Promise<void> {
-        console.log('[API] Creating quiz result, sending POST to /quiz-results with data:', data);
+        // console.log('[API] Creating quiz result, sending POST to /quiz-results with data:', data);
         try {
             await request<void>('/quiz-results', {
                 method: 'POST',
                 body: JSON.stringify(data),
             });
-            console.log('[API] createQuizResult request succeeded');
+            // console.log('[API] createQuizResult request succeeded');
         } catch (error) {
             console.error('[API] createQuizResult request failed:', error);
             throw error;

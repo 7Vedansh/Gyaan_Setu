@@ -37,7 +37,7 @@ class DatabaseService {
 
             this.db = opened;
             await this.createTables();
-            console.log('Database initialized successfully');
+            // console.log('Database initialized successfully');
         } catch (error) {
             this.db = null;
             console.error('Database initialization error:', error);

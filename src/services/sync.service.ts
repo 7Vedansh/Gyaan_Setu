@@ -28,30 +28,30 @@ class SyncService {
             retry_count: 0,
         };
 
-        console.log('[Queue] Adding item to sync queue:', { table: data.table_name, operation: data.operation, local_id: data.local_id });
+        // console.log('[Queue] Adding item to sync queue:', { table: data.table_name, operation: data.operation, local_id: data.local_id });
         await DatabaseService.insert('sync_queue', data);
-        console.log('[Queue] Item added to sync queue successfully');
+        // console.log('[Queue] Item added to sync queue successfully');
     }
 
     /**
      * @abstract Keeps a watch on change in the network state (stable <-> unstable)
      */
     async startMonitoring(): Promise<void> {
-        console.log('[Network Monitor] Starting network monitoring');
+        // console.log('[Network Monitor] Starting network monitoring');
         this.networkUnsubscribe = NetInfo.addEventListener(async (state: NetInfoState) => {
-            console.log('[Network Monitor] Network state changed:', {
-                isConnected: state.isConnected,
-                isInternetReachable: state.isInternetReachable,
-                type: state.type,
-            });
+            // console.log('[Network Monitor] Network state changed:', {
+            //     isConnected: state.isConnected,
+            //     isInternetReachable: state.isInternetReachable,
+            //     type: state.type,
+            // });
 
             const shouldSync = this.shouldSync(state);
-            console.log('[Network Monitor] Should sync?', shouldSync);
+            // console.log('[Network Monitor] Should sync?', shouldSync);
 
             this.isNetworkAvailable = shouldSync;
 
             if (shouldSync) {
-                console.log('[Network Monitor] Network is good, starting background sync...');
+                // console.log('[Network Monitor] Network is good, starting background sync...');
                 this.startBackgroundSync();
                 // Try immediate sync on network restoration
                 try {
@@ -60,7 +60,7 @@ class SyncService {
                     console.error('[Network Monitor] Immediate sync error (non-blocking):', error);
                 }
             } else {
-                console.log('[Network Monitor] Network is poor, stopping background sync...');
+                // console.log('[Network Monitor] Network is poor, stopping background sync...');
                 this.stopBackgroundSync();
             }
         });
@@ -74,7 +74,7 @@ class SyncService {
     }
 
     stopMonitoring(): void {
-        console.log('[Network Monitor] Stopping network monitoring');
+        // console.log('[Network Monitor] Stopping network monitoring');
         if (this.networkUnsubscribe) {
             this.networkUnsubscribe();
         }
@@ -123,11 +123,11 @@ class SyncService {
      */
     private startBackgroundSync(): void {
         if (this.backgroundSyncInterval !== null) {
-            console.log('[Background Sync] Background sync already running');
+            // console.log('[Background Sync] Background sync already running');
             return;
         }
 
-        console.log('[Background Sync] Starting background sync checks every', BACKGROUND_SYNC_CHECK_INTERVAL, 'ms');
+        // console.log('[Background Sync] Starting background sync checks every', BACKGROUND_SYNC_CHECK_INTERVAL, 'ms');
 
         this.backgroundSyncInterval = setInterval(async () => {
             try {
@@ -143,7 +143,7 @@ class SyncService {
      */
     private stopBackgroundSync(): void {
         if (this.backgroundSyncInterval !== null) {
-            console.log('[Background Sync] Stopping background sync');
+            // console.log('[Background Sync] Stopping background sync');
             clearInterval(this.backgroundSyncInterval);
             this.backgroundSyncInterval = null;
         }
@@ -210,7 +210,7 @@ class SyncService {
             const queueItems = await DatabaseService.getSyncQueue() as SyncQueueItem[];
 
             if (queueItems.length > 0) {
-                console.log(`[Background Sync] Found ${queueItems.length} unsynced items, starting sync...`);
+                // console.log(`[Background Sync] Found ${queueItems.length} unsynced items, starting sync...`);
                 await this.performSync(true); // Force sync to bypass throttle
             }
         } catch (error) {
@@ -224,26 +224,26 @@ class SyncService {
      */
     async performSync(force?: boolean): Promise<void> {
         if (this.isSyncing) {
-            console.log('[Sync] Sync already in progress, skipping');
+            // console.log('[Sync] Sync already in progress, skipping');
             throw new Error('Sync already in progress');
         }
 
         if (!force && !(await this.canSyncNow())) {
-            console.log('[Sync] Throttled: Too soon since last sync');
+            // console.log('[Sync] Throttled: Too soon since last sync');
             throw new Error('Too soon since last sync. Try again in a moment.');
         }
 
         this.isSyncing = true;
-        console.log('[Sync] ===== START SYNC =====');
+        // console.log('[Sync] ===== START SYNC =====');
 
         try {
             await DatabaseService.init();
-            console.log('[Sync] Database initialized');
+            // console.log('[Sync] Database initialized');
 
             await this.processSyncQueue();
 
             await AsyncStorage.setItem(SYNC_INTERVAL_KEY, Date.now().toString());
-            console.log('[Sync] ===== SYNC COMPLETED SUCCESSFULLY =====');
+            // console.log('[Sync] ===== SYNC COMPLETED SUCCESSFULLY =====');
         } catch (error) {
             console.error('[Sync] ===== SYNC FAILED =====', error);
             throw error;
@@ -255,22 +255,22 @@ class SyncService {
     private async processSyncQueue(): Promise<void> {
         const queueItems = await DatabaseService.getSyncQueue() as SyncQueueItem[];
 
-        console.log(`[Sync] Processing ${queueItems.length} items in queue`);
+        // console.log(`[Sync] Processing ${queueItems.length} items in queue`);
 
         if (queueItems.length === 0) {
-            console.log('[Sync] Queue is empty, nothing to sync');
+            // console.log('[Sync] Queue is empty, nothing to sync');
             return;
         }
 
         for (const item of queueItems) {
-            console.log(`[Sync] Processing queue item #${item.id}: ${item.operation} on ${item.table_name}`);
+            // console.log(`[Sync] Processing queue item #${item.id}: ${item.operation} on ${item.table_name}`);
             try {
                 await this.syncQueueItem(item);
-                console.log(`[Sync] Successfully synced item #${item.id}`);
+                // console.log(`[Sync] Successfully synced item #${item.id}`);
 
                 // Remove from queue on success
                 await DatabaseService.runSql('DELETE FROM sync_queue WHERE id = ?', [item.id]);
-                console.log(`[Sync] Deleted item #${item.id} from queue`);
+                // console.log(`[Sync] Deleted item #${item.id} from queue`);
             } catch (error) {
                 console.error(`[Sync] Error syncing queue item #${item.id}:`, error);
 
@@ -284,7 +284,7 @@ class SyncService {
 
                 // Remove from queue if too many retries
                 if (item.retry_count >= 5) {
-                    console.log(`[Sync] Item #${item.id} exceeded retry limit, removing from queue`);
+                    // console.log(`[Sync] Item #${item.id} exceeded retry limit, removing from queue`);
                     await DatabaseService.runSql('DELETE FROM sync_queue WHERE id = ?', [item.id]);
                 }
             }
@@ -294,7 +294,7 @@ class SyncService {
     private async syncQueueItem(item: SyncQueueItem): Promise<void> {
         const { operation, table_name, local_id, data } = item;
 
-        console.log(`[SyncItem] Starting sync: operation=${operation}, table=${table_name}, local_id=${local_id}`);
+        // console.log(`[SyncItem] Starting sync: operation=${operation}, table=${table_name}, local_id=${local_id}`);
 
         if (table_name !== 'quiz_results') {
             throw new Error(`Unsupported table: ${table_name}`);
@@ -303,17 +303,17 @@ class SyncService {
         switch (operation) {
             case 'CREATE':
                 if (!data) throw new Error('No data for CREATE operation');
-                console.log(`[SyncItem] Creating quiz result with data:`, data);
+                // console.log(`[SyncItem] Creating quiz result with data:`, data);
                 await ApiService.createQuizResult(JSON.parse(data));
-                console.log(`[SyncItem] Quiz result created successfully`);
+                // console.log(`[SyncItem] Quiz result created successfully`);
 
                 // Mark as synced in local DB
                 if (local_id) {
-                    console.log(`[SyncItem] Marking quiz_results #${local_id} as synced`);
+                    // console.log(`[SyncItem] Marking quiz_results #${local_id} as synced`);
                     await DatabaseService.update(table_name, local_id, {
                         is_synced: 1,
                     });
-                    console.log(`[SyncItem] Quiz result #${local_id} marked as synced`);
+                    // console.log(`[SyncItem] Quiz result #${local_id} marked as synced`);
                 }
                 break;
 
