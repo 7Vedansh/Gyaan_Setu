@@ -48,3 +48,5 @@ archive/
 .pyc
 .pkl
 .faiss
+.venv
+.__pycache__/

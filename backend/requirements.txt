@@ -1,10 +1,33 @@
-fastapi==0.111.0
-uvicorn==0.30.1
-openai==1.30.1
-python-dotenv==1.0.1
-faiss-cpu==1.8.0
-sentence-transformers==2.7.0
-numpy==1.26.4
+# Core API Framework
+fastapi==0.109.0
+uvicorn==0.27.0
+pydantic==2.5.0
+
+# AI/ML Libraries
+sentence-transformers==2.2.2
+faiss-cpu==1.7.4
+numpy==1.24.3
+
+# Document Processing
+unstructured==0.12.0
+pillow==10.2.0
+pdf2image==1.17.0
+pytesseract==0.3.10
+
+# Language Detection
 langdetect==1.0.9
-unstructured==0.14.8
-pypdf==4.2.0
+
+# Online AI API
+openai==1.10.0
+python-dotenv==1.0.0
+
+# Utilities
+python-multipart==0.0.6
+
+# Testing
+requests==2.31.0
+colorama==0.4.6
+
+# Optional: For better PDF processing
+# poppler-utils (system package, install via apt/brew/choco)
+# tesseract-ocr (system package, install via apt/brew/choco)
