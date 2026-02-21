@@ -13,6 +13,8 @@ import { getCommonTranslation } from "@/content/translations";
 import { useBreakpoint } from "@/context/breakpoints";
 import { useCourse } from "@/context/course";
 import { useTheme } from "@/context/theme";
+import ContentService from "@/services/content.service";
+import ApiService from "@/services/api.service";
 
 export default function Register() {
   const { border, accent, background, mutedForeground, primary } = useTheme();
@@ -64,8 +66,25 @@ export default function Register() {
                           : Math.min(containerWidth, 360)
                         : 320,
                   }}
-                  onPress={() => {
+                  onPress={async () => {
                     setCourseId(languageCode);
+                    try {
+                      const structure = await ApiService.fetchCourseStructure();
+                      const language = structure[0];
+                      const subject = language?.subjects?.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0];
+                      const firstChapter = subject?.chapters
+                        ?.slice()
+                        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0];
+
+                      if (subject?._id && firstChapter?._id) {
+                        await ContentService.downloadFirstChapter(subject._id, firstChapter._id);
+                      } else {
+                        console.error("[Register] Missing subject/chapter IDs from course-structure");
+                      }
+                    } catch (error) {
+                      console.error("[Register] Failed to fetch course-structure:", error);
+                    }
+
                     router.push("/learn");
                   }}
                 >

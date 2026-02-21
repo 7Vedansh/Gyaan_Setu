@@ -12,6 +12,8 @@ import { useBreakpoint } from "@/context/breakpoints";
 import { useCourse } from "@/context/course";
 import { useTheme } from "@/context/theme";
 import { IconName } from "@/types";
+import { useCourseContent } from "@/hooks/useCourseContent";
+import ContentService from "@/services/content.service";
 
 interface Props {
   xp: number;
@@ -47,9 +49,33 @@ export default function LessonOutrolayout(props: Props) {
   const breakpoint = useBreakpoint();
   const layout = useWindowDimensions();
   const { courseProgress, setCourseProgress } = useCourse();
+  const { course } = useCourseContent();
 
-  const onContinue = () => {
+  const onContinue = async () => {
     if (props.increaseProgress) {
+      const currentSection = course.sections[courseProgress.sectionId];
+      const currentChapter = currentSection?.chapters[courseProgress.chapterId];
+      const nextChapter = currentSection?.chapters[courseProgress.chapterId + 1];
+      const prevChapter = currentSection?.chapters[courseProgress.chapterId - 1];
+
+      if (currentChapter?._id) {
+        const completedTopics = courseProgress.lessonId + 1;
+        const totalTopics = currentChapter.lessons.length;
+        if (totalTopics > 0) {
+          try {
+            await ContentService.onTopicCompleted({
+              currentChapterId: currentChapter._id,
+              completedTopics,
+              totalTopics,
+              nextChapterId: nextChapter?._id,
+              prevChapterId: prevChapter?._id,
+            });
+          } catch (error) {
+            console.error("[ExerciseOutro] Topic completion sync failed:", error);
+          }
+        }
+      }
+
       const nextCourseProgress = nextProgress(courseProgress);
       if (nextCourseProgress) {
         setCourseProgress(nextCourseProgress);

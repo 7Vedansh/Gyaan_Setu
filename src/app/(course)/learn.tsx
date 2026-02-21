@@ -17,6 +17,8 @@ import { useTheme } from "@/context/theme";
 import { Chapter } from "@/types/course";
 import DatabaseService from "@/services/database.service";
 import { CachedChapterRow, StoredTopic } from "@/types/store";
+import ContentService from "@/services/content.service";
+import ApiService from "@/services/api.service";
 
 const CAMP = 16;
 const CIRCLE_RADUIS = 48;
@@ -34,24 +36,109 @@ export default function Learn() {
   const [currentChapter, setCurrentChapter] = useState<CachedChapterRow | null>(null);
   const [topics, setTopics] = useState<StoredTopic[]>([]);
   const [isChapterLoading, setIsChapterLoading] = useState(true);
+  const [debugInfo, setDebugInfo] = useState("");
+  const currentSection = course.sections[courseProgress.sectionId];
+  const currentSubjectId = currentSection?._id ?? null;
 
   useEffect(() => {
-    if (!courseId) return;
+    if (!courseId) {
+      setIsChapterLoading(false);
+      setCurrentChapter(null);
+      setTopics([]);
+      setDebugInfo(`No course id yet. courseId=${String(courseId)} subjectId=${String(currentSubjectId)}`);
+      return;
+    }
 
     async function loadChapter() {
       setIsChapterLoading(true);
       try {
         await DatabaseService.init();
+        let subjectId = currentSubjectId;
+        if (!subjectId) {
+          subjectId = await DatabaseService.getAnyCachedSubjectId();
+          if (!subjectId) {
+            try {
+              let structure;
+              try {
+                structure = await ApiService.fetchCourseStructure();
+              } catch (firstErr) {
+                const msg =
+                  firstErr instanceof Error ? firstErr.message.toLowerCase() : String(firstErr).toLowerCase();
+                if (msg.includes("abort")) {
+                  await new Promise((resolve) => setTimeout(resolve, 700));
+                  structure = await ApiService.fetchCourseStructure();
+                } else {
+                  throw firstErr;
+                }
+              }
+              const language = structure[0];
+              const fallbackSubject = language?.subjects
+                ?.slice()
+                .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0];
+              const fallbackChapter = fallbackSubject?.chapters
+                ?.slice()
+                .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0];
+
+              if (fallbackSubject?._id && fallbackChapter?._id) {
+                await ContentService.ensureChapterCached(fallbackSubject._id, fallbackChapter._id);
+                subjectId = fallbackSubject._id;
+              } else {
+                setDebugInfo(`No subject id yet. courseId=${String(courseId)} subjectId=null and no cached subject`);
+                setCurrentChapter(null);
+                setTopics([]);
+                return;
+              }
+            } catch (bootstrapErr) {
+              setDebugInfo(
+                `Bootstrap failed: ${
+                  bootstrapErr instanceof Error ? bootstrapErr.message : String(bootstrapErr)
+                }`
+              );
+              setCurrentChapter(null);
+              setTopics([]);
+              return;
+            }
+          }
+          setDebugInfo(`Using cached subjectId=${subjectId} (course subject id missing)`);
+        }
 
         // All chapters for this subject ordered by chapter_order ASC
-        const allChapters = await DatabaseService.getCachedChaptersBySubject(courseId!);
+        let allChapters = await DatabaseService.getChaptersBySubject(subjectId);
+        console.log(`[Learn] SQLite chapters for subject=${subjectId}:`, allChapters.length);
+        setDebugInfo(`subject=${subjectId} sqliteChapters=${allChapters.length}`);
 
         // courseProgress.chapterId is the numeric index into that ordered list
-        const row = allChapters[courseProgress.chapterId] ?? null;
+        let row = allChapters[courseProgress.chapterId] ?? null;
+
+        // Recovery path: if chapter cache is missing, fetch current chapter immediately.
+        if (!row) {
+          const chapterFromCourse = currentSection?.chapters[courseProgress.chapterId];
+          const chapterMongoId = chapterFromCourse?._id;
+          if (chapterMongoId) {
+            try {
+              await ContentService.ensureChapterCached(subjectId, chapterMongoId);
+              allChapters = await DatabaseService.getChaptersBySubject(subjectId);
+              row = allChapters[courseProgress.chapterId] ?? null;
+            } catch (fetchErr) {
+              console.error("[Learn] Failed to fetch/cache missing chapter:", fetchErr);
+            }
+          }
+        }
+
         setCurrentChapter(row);
-        setTopics(row ? (JSON.parse(row.content_json) as StoredTopic[]) : []);
+        const parsedTopics = row ? (JSON.parse(row.content_json) as StoredTopic[]) : [];
+        const microCount = parsedTopics.reduce((acc, t) => acc + t.microlessons.length, 0);
+        const quizCount = parsedTopics.reduce((acc, t) => acc + t.quizzes.length, 0);
+        console.log(
+          `[Learn] Loaded chapter row=${row?.chapter_id ?? "none"}, topics=${parsedTopics.length}, microlessons=${microCount}, quizzes=${quizCount}`
+        );
+        setDebugInfo(
+          `row=${row?.chapter_id ?? "none"} topics=${parsedTopics.length} micro=${microCount} quiz=${quizCount}`
+        );
+        setTopics(parsedTopics);
       } catch (err) {
         console.error('[Learn] Failed to load chapter from SQLite:', err);
+        setDebugInfo(`load error: ${err instanceof Error ? err.message : String(err)}`);
         setCurrentChapter(null);
         setTopics([]);
       } finally {
@@ -60,13 +147,11 @@ export default function Learn() {
     }
 
     loadChapter();
-  }, [courseId, courseProgress.chapterId]);
+  }, [courseId, courseProgress.chapterId, currentSubjectId]);
   // ───────────────────────────────────────────────────────────────────────────
 
   let isOdd = true;
   let translateX = 0;
-
-  const currentSection = course.sections[courseProgress.sectionId];
 
   if (!currentSection) {
     if (isLoading) {
@@ -140,9 +225,14 @@ export default function Learn() {
           {isThisCurrentChapter && isChapterLoading ? (
             <ActivityIndicator size="small" color={primary} />
           ) : isThisCurrentChapter && chapterTopics.length === 0 ? (
-            <Text style={{ color: mutedForeground, fontSize: 14 }}>
-              Content not available offline yet.
-            </Text>
+            <View style={{ alignItems: "center", gap: 6 }}>
+              <Text style={{ color: mutedForeground, fontSize: 14 }}>
+                Content not available offline yet.
+              </Text>
+              <Text style={{ color: mutedForeground, fontSize: 11, textAlign: "center" }}>
+                {debugInfo}
+              </Text>
+            </View>
           ) : (
             chapterTopics.map((topic, topicIndex) => {
               if (translateX > CAMP || translateX < -CAMP) isOdd = !isOdd;
@@ -160,6 +250,7 @@ export default function Learn() {
                   index={topicIndex}
                   circleRadius={CIRCLE_RADUIS}
                   topic={topic}
+                  currentChapterMongoId={chapter._id ?? ""}
                   isCurrentLesson={isCurrentTopic}
                   isFinishedLesson={isFinishedTopic}
                   totalMicroLessons={topic.microlessons.length}

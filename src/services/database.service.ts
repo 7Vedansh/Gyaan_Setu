@@ -1,4 +1,4 @@
-import { CachedChapterInput, CachedChapterRow } from '@/types/store';
+import { ChapterInput, ChapterRow, QuizResultRow } from '@/types/store';
 import * as SQLite from 'expo-sqlite';
 import type { ResultSet, ResultSetError } from 'expo-sqlite';
 
@@ -63,18 +63,23 @@ class DatabaseService {
             )`, args: []
             },
             {
-                sql: `CREATE TABLE IF NOT EXISTS quiz_results (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                quiz_id INTEGER NOT NULL,
-                score INTEGER NOT NULL,
-                total_questions INTEGER NOT NULL,
-                answers_json TEXT NOT NULL,
-                created_at INTEGER NOT NULL,
-                is_synced INTEGER DEFAULT 0
-            )`, args: []
+                sql: `DROP TABLE IF EXISTS quiz_results`, args: []
             },
             {
-                sql: `CREATE TABLE IF NOT EXISTS cached_chapters (
+                sql: `CREATE TABLE IF NOT EXISTS quiz_results (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    quiz_id         TEXT    NOT NULL,
+                    topic_id        TEXT    NOT NULL,
+                    chapter_id      TEXT    NOT NULL,
+                    selected_option INTEGER NOT NULL,
+                    is_correct      INTEGER NOT NULL,
+                    time_taken_ms   INTEGER,
+                    attempted_at    INTEGER NOT NULL,
+                    is_synced       INTEGER NOT NULL DEFAULT 0
+                )`, args: []
+            },
+            {
+                sql: `CREATE TABLE IF NOT EXISTS chapters (
                     id              INTEGER PRIMARY KEY AUTOINCREMENT,
                     chapter_id      TEXT    NOT NULL UNIQUE,
                     chapter_name    TEXT    NOT NULL,
@@ -84,7 +89,7 @@ class DatabaseService {
                     total_topics    INTEGER NOT NULL DEFAULT 0,
                     content_json    TEXT    NOT NULL,
                     fetched_at      INTEGER NOT NULL
-                );`,args: []
+                )`,args: []
             }
         ];
 
@@ -96,8 +101,10 @@ class DatabaseService {
         const indexQueries = [
             { sql: `CREATE INDEX IF NOT EXISTS idx_sync_queue_created ON sync_queue(created_at)`, args: [] },
             { sql: `CREATE INDEX IF NOT EXISTS idx_quiz_results_quiz_id ON quiz_results(quiz_id)`, args: [] },
-            {sql: `CREATE INDEX IF NOT EXISTS idx_cached_chapters_chapter_id ON cached_chapters(chapter_id);`, args: [] },
-            {sql: `CREATE INDEX IF NOT EXISTS idx_cached_chapters_subject_id ON cached_chapters(subject_id);`, args: [] },
+            { sql: `CREATE INDEX IF NOT EXISTS idx_quiz_results_chapter_id ON quiz_results(chapter_id)`, args: [] },
+            { sql: `CREATE INDEX IF NOT EXISTS idx_quiz_results_is_synced ON quiz_results(is_synced)`, args: [] },
+            {sql: `CREATE INDEX IF NOT EXISTS idx_chapters_chapter_id ON chapters(chapter_id)`, args: [] },
+            {sql: `CREATE INDEX IF NOT EXISTS idx_chapters_subject_id ON chapters(subject_id)`, args: [] },
             ];
 
         const indexResults = await this.db.execAsync(indexQueries, false);
@@ -179,11 +186,11 @@ class DatabaseService {
  * Upsert a chapter into the cache.
  * If a row with the same chapter_id already exists it is replaced cleanly.
  */
-    async upsertCachedChapter(input: CachedChapterInput): Promise<void> {
+    async upsertChapter(input: ChapterInput): Promise<void> {
         if (!this.db) throw new Error('Database not initialized');
 
         const sql = `
-        INSERT INTO cached_chapters
+        INSERT INTO chapters
             (chapter_id, chapter_name, chapter_order, subject_id, subject_name, total_topics, content_json, fetched_at)
         VALUES
             (?, ?, ?, ?, ?, ?, ?, ?)
@@ -203,7 +210,7 @@ class DatabaseService {
             input.chapter_order,
             input.subject_id,
             input.subject_name,
-            input.topics.length,
+            input.total_topics ?? input.topics.length,
             JSON.stringify(input.topics),
             Date.now(),
         ];
@@ -217,9 +224,9 @@ class DatabaseService {
      * Fetch a single cached chapter row by chapter_id.
      * Returns null if not cached.
      */
-    async getCachedChapter(chapterId: string): Promise<CachedChapterRow | null> {
-        const rows = await this.query<CachedChapterRow>(
-            'SELECT * FROM cached_chapters WHERE chapter_id = ? LIMIT 1',
+    async getChapter(chapterId: string): Promise<ChapterRow | null> {
+        const rows = await this.query<ChapterRow>(
+            'SELECT * FROM chapters WHERE chapter_id = ? LIMIT 1',
             [chapterId]
         );
         return rows[0] ?? null;
@@ -228,19 +235,26 @@ class DatabaseService {
     /**
      * Fetch all cached chapters for a subject, ordered correctly.
      */
-    async getCachedChaptersBySubject(subjectId: string): Promise<CachedChapterRow[]> {
-        return this.query<CachedChapterRow>(
-            'SELECT * FROM cached_chapters WHERE subject_id = ? ORDER BY chapter_order ASC',
+    async getChaptersBySubject(subjectId: string): Promise<ChapterRow[]> {
+        return this.query<ChapterRow>(
+            'SELECT * FROM chapters WHERE subject_id = ? ORDER BY chapter_order ASC',
             [subjectId]
         );
+    }
+
+    async getAnyCachedSubjectId(): Promise<string | null> {
+        const rows = await this.query<{ subject_id: string }>(
+            'SELECT subject_id FROM chapters ORDER BY fetched_at DESC LIMIT 1'
+        );
+        return rows[0]?.subject_id ?? null;
     }
 
     /**
      * Check if a chapter is cached without loading content_json.
      */
-    async isChapterCached(chapterId: string): Promise<boolean> {
+    async hasChapter(chapterId: string): Promise<boolean> {
         const rows = await this.query<{ count: number }>(
-            'SELECT COUNT(*) as count FROM cached_chapters WHERE chapter_id = ?',
+            'SELECT COUNT(*) as count FROM chapters WHERE chapter_id = ?',
             [chapterId]
         );
         return (rows[0]?.count ?? 0) > 0;
@@ -249,9 +263,9 @@ class DatabaseService {
     /**
      * Delete a single chapter from the cache.
      */
-    async deleteCachedChapter(chapterId: string): Promise<void> {
+    async deleteChapter(chapterId: string): Promise<void> {
         await this.runSql(
-            'DELETE FROM cached_chapters WHERE chapter_id = ?',
+            'DELETE FROM chapters WHERE chapter_id = ?',
             [chapterId]
         );
     }
@@ -261,9 +275,73 @@ class DatabaseService {
      */
     async deleteCachedChaptersBySubject(subjectId: string): Promise<void> {
         await this.runSql(
-            'DELETE FROM cached_chapters WHERE subject_id = ?',
+            'DELETE FROM chapters WHERE subject_id = ?',
             [subjectId]
         );
+    }
+
+    async insertQuizResult(data: {
+        quiz_id: string;
+        topic_id: string;
+        chapter_id: string;
+        selected_option: number;
+        is_correct: boolean;
+        time_taken_ms?: number;
+        attempted_at: number;
+    }): Promise<number> {
+        if (!this.db) throw new Error('Database not initialized');
+        const sql = `
+            INSERT INTO quiz_results
+                (quiz_id, topic_id, chapter_id, selected_option, is_correct, time_taken_ms, attempted_at, is_synced)
+            VALUES
+                (?, ?, ?, ?, ?, ?, ?, 0)
+        `;
+        const args = [
+            data.quiz_id,
+            data.topic_id,
+            data.chapter_id,
+            data.selected_option,
+            data.is_correct ? 1 : 0,
+            data.time_taken_ms ?? null,
+            data.attempted_at,
+        ];
+        const results = await this.db.execAsync([{ sql, args }], false);
+        this.assertResult(results[0]);
+        return results[0].insertId ?? 0;
+    }
+
+    async getUnsyncedQuizResults(): Promise<QuizResultRow[]> {
+        return this.query<QuizResultRow>(
+            'SELECT * FROM quiz_results WHERE is_synced = 0'
+        );
+    }
+
+    async markQuizResultSynced(id: number): Promise<void> {
+        await this.runSql(
+            'UPDATE quiz_results SET is_synced = 1 WHERE id = ?',
+            [id]
+        );
+    }
+
+    // Backward-compatible wrappers
+    async upsertCachedChapter(input: ChapterInput): Promise<void> {
+        return this.upsertChapter(input);
+    }
+
+    async getCachedChapter(chapterId: string): Promise<ChapterRow | null> {
+        return this.getChapter(chapterId);
+    }
+
+    async getCachedChaptersBySubject(subjectId: string): Promise<ChapterRow[]> {
+        return this.getChaptersBySubject(subjectId);
+    }
+
+    async isChapterCached(chapterId: string): Promise<boolean> {
+        return this.hasChapter(chapterId);
+    }
+
+    async deleteCachedChapter(chapterId: string): Promise<void> {
+        return this.deleteChapter(chapterId);
     }
 
     getDatabase(): ExpoSQLiteDatabase | null {

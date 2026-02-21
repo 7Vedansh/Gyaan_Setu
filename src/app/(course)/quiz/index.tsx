@@ -15,6 +15,7 @@ import QuizService from "@/services/quiz.service";
 import SyncService from "@/services/sync.service";
 import { getChapter } from "@/services/course.service";
 import { useCourse } from "@/context/course";
+import { QuizResult } from "@/types/store";
 
 import { theme } from "@/theme/theme";
 
@@ -29,9 +30,7 @@ export default function Quizzes(): JSX.Element {
     const [fetchError, setFetchError] = useState<string | null>(null);
 
     // ── Stored results (local SQLite) ───────────────────────────────────
-    const [storedResults, setStoredResults] = useState<
-        { id: number; quiz_id: number; score: number; total_questions: number; created_at: number }[]
-    >([]);
+    const [storedResults, setStoredResults] = useState<QuizResult[]>([]);
     const [syncing, setSyncing] = useState(false);
     const [syncMessage, setSyncMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -148,7 +147,7 @@ export default function Quizzes(): JSX.Element {
                 ) : (
                     storedResults.map((r) => (
                         <Text key={r.id} style={styles.resultRow}>
-                            Quiz #{r.quiz_id} — {r.score}/{r.total_questions} — {new Date(r.created_at).toLocaleString()}
+                            Quiz #{r.quiz_id} — {r.is_correct === 1 ? "Correct" : "Incorrect"} — {new Date(r.attempted_at).toLocaleString()}
                         </Text>
                     ))
                 )}

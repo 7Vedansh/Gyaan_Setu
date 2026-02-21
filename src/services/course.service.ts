@@ -44,14 +44,16 @@ interface ApiMicroLesson {
 
 interface ApiTopic {
     _id: string;
-    topic_number: number;
+    topic_number?: number;
+    order?: number;
     microlessons: ApiMicroLesson[];
 }
 
 interface ApiChapter {
     _id: string;
     chapter_name: string;
-    chapter_number: number;
+    chapter_number?: number;
+    order?: number;
     topics: ApiTopic[];
 }
 
@@ -134,12 +136,12 @@ async function fetchCourseFromApi(): Promise<Course> {
                 chapters: s.chapters.map((c, cIdx) => ({
                     id: cIdx,
                     _id: c._id,
-                    title: { en: `Unit ${c.chapter_number}` },
+                    title: { en: `Unit ${c.chapter_number ?? c.order ?? cIdx + 1}` },
                     description: { en: c.chapter_name },
                     lessons: c.topics.map((t, tIdx) => ({
                         id: tIdx,
                         _id: t._id,
-                        description: { en: `Topic ${t.topic_number}` },
+                        description: { en: `Topic ${t.topic_number ?? t.order ?? tIdx + 1}` },
                         // Map Microlessons → Exercises
                         exercises: t.microlessons.map((m, mIdx) => ({
                             id: mIdx,
@@ -158,7 +160,13 @@ async function fetchCourseFromApi(): Promise<Course> {
     } catch (err: unknown) {
         clearTimeout(timeoutId);
 
-        if (err instanceof DOMException && err.name === 'AbortError') {
+        const isAbortError =
+            !!err &&
+            typeof err === 'object' &&
+            'name' in err &&
+            (err as { name?: string }).name === 'AbortError';
+
+        if (isAbortError) {
             throw new Error(
                 `[CourseService] Request timed out after ${TIMEOUT_MS}ms`,
             );
@@ -178,8 +186,9 @@ async function fetchCourseFromApi(): Promise<Course> {
  * successful load.
  */
 export async function loadCourseContent(): Promise<CourseData> {
-    // Return cache if available
-    if (_cache) return _cache;
+    // Return cache only when we already have API content.
+    // If cache is static fallback, allow retry to recover automatically.
+    if (_cache?.source === 'api') return _cache;
 
     // Deduplicate concurrent calls
     if (_fetchPromise) return _fetchPromise;

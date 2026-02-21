@@ -78,7 +78,13 @@ async function request<T>(
     } catch (err: unknown) {
         clearTimeout(timeoutId);
 
-        if (err instanceof DOMException && err.name === 'AbortError') {
+        const isAbortError =
+            !!err &&
+            typeof err === 'object' &&
+            'name' in err &&
+            (err as { name?: string }).name === 'AbortError';
+
+        if (isAbortError) {
             throw new Error(
                 `[MicroLessonService] Request timed out after ${TIMEOUT_MS}ms: ${url}`,
             );

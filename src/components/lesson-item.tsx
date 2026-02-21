@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
-import { Animated, Pressable, PressableProps, StyleProp, View as NativeView, ViewStyle } from "react-native";
+import {
+  Animated,
+  Modal,
+  Pressable,
+  PressableProps,
+  ScrollView,
+  StyleProp,
+  View as NativeView,
+  ViewStyle,
+} from "react-native";
 import Popover from "react-native-popover-view/dist/Popover";
 
 import { Icon } from "@/components/icons";
@@ -9,7 +18,9 @@ import { Button } from "@/components/ui/Button";
 import { layouts } from "@/constants/layouts";
 import { useTheme } from "@/context/theme";
 import { CourseProgression } from "@/types/course";
-import { StoredTopic } from "@/types/store";
+import { StoredMicroLesson, StoredQuiz, StoredTopic } from "@/types/store";
+import DatabaseService from "@/services/database.service";
+import SyncService from "@/services/sync.service";
 
 interface Props extends PressableProps {
   circleRadius: number;
@@ -20,6 +31,7 @@ interface Props extends PressableProps {
   totalMicroLessons: number;
   totalQuizzes: number;
   courseProgression: CourseProgression;
+  currentChapterMongoId: string;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -32,6 +44,7 @@ export function LessonItem({
   totalMicroLessons,
   totalQuizzes,
   courseProgression,
+  currentChapterMongoId,
   ...props
 }: Props) {
   const { style, ...pressableProps } = props;
@@ -44,22 +57,32 @@ export function LessonItem({
     mutedForeground,
     muted,
     accent,
+    secondary,
   } = useTheme();
 
   const isNotFinishedLesson = !isFinishedLesson && !isCurrentLesson;
   const [isVisible, setIsVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<"microlessons" | "quizzes">("microlessons");
+  const [activeMicroLesson, setActiveMicroLesson] = useState<StoredMicroLesson | null>(null);
+  const [readMicroLessons, setReadMicroLessons] = useState<Set<string>>(new Set());
+  const [activeQuizIndex, setActiveQuizIndex] = useState<number | null>(null);
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
+  const [quizStartedAt, setQuizStartedAt] = useState<number | null>(null);
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const popoverAnchor = useRef<NativeView>(null);
 
   const openPopover = () => setIsVisible(true);
-  const closePopover = () => setIsVisible(false);
+  const closePopover = () => {
+    setIsVisible(false);
+    setActiveQuizIndex(null);
+    setSelectedOptionIndex(null);
+    setQuizStartedAt(null);
+  };
 
   const { sectionId, chapterId, lessonId, exerciseId } = courseProgression;
 
-  // Pulse animation for current lesson
   useEffect(() => {
     if (isCurrentLesson) {
       Animated.loop(
@@ -77,6 +100,52 @@ export function LessonItem({
 
   const handlePressOut = () => {
     Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, friction: 6, tension: 100 }).start();
+  };
+
+  const openQuiz = (quizIndex: number) => {
+    setActiveQuizIndex(quizIndex);
+    setSelectedOptionIndex(null);
+    setQuizStartedAt(Date.now());
+  };
+
+  const currentQuiz: StoredQuiz | null =
+    activeQuizIndex == null ? null : (topic.quizzes[activeQuizIndex] ?? null);
+
+  const selectQuizOption = async (selectedIndex: number) => {
+    if (!currentQuiz || selectedOptionIndex != null) return;
+    setSelectedOptionIndex(selectedIndex);
+
+    const startTime = quizStartedAt ?? Date.now();
+    const timeTaken = Date.now() - startTime;
+
+    try {
+      await DatabaseService.init();
+      await DatabaseService.insertQuizResult({
+        quiz_id: currentQuiz.quiz_id,
+        topic_id: topic.topic_id,
+        chapter_id: currentChapterMongoId,
+        selected_option: selectedIndex,
+        is_correct: selectedIndex === currentQuiz.correct,
+        time_taken_ms: timeTaken,
+        attempted_at: Date.now(),
+      });
+
+      if (SyncService.getBackgroundSyncStatus().networkAvailable) {
+        SyncService.performSync(true).catch(() => {});
+      }
+    } catch (error) {
+      console.error("[LessonItem] Failed to save quiz result:", error);
+    }
+  };
+
+  const goToNextQuizOrClose = () => {
+    if (activeQuizIndex == null) return;
+    const nextIndex = activeQuizIndex + 1;
+    if (nextIndex < topic.quizzes.length) {
+      openQuiz(nextIndex);
+      return;
+    }
+    closePopover();
   };
 
   return (
@@ -158,7 +227,6 @@ export function LessonItem({
               elevation: 3,
             }}
           >
-            {/* ── Header ───────────────────────────────────────────────── */}
             <View
               style={{
                 backgroundColor: primary,
@@ -208,7 +276,6 @@ export function LessonItem({
                 )}
               </View>
 
-              {/* Stats row */}
               <View style={{ flexDirection: "row", gap: layouts.padding * 1.5, marginTop: 2 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                   <Icon name="notebook" size={14} color={primaryForeground} />
@@ -225,7 +292,6 @@ export function LessonItem({
               </View>
             </View>
 
-            {/* ── Tab bar ──────────────────────────────────────────────── */}
             {!isNotFinishedLesson && (
               <View
                 style={{
@@ -237,7 +303,10 @@ export function LessonItem({
                 {(["microlessons", "quizzes"] as const).map((tab) => (
                   <Pressable
                     key={tab}
-                    onPress={() => setActiveTab(tab)}
+                    onPress={() => {
+                      setActiveTab(tab);
+                      setActiveQuizIndex(null);
+                    }}
                     style={{
                       flex: 1,
                       paddingVertical: layouts.padding * 0.75,
@@ -261,10 +330,8 @@ export function LessonItem({
               </View>
             )}
 
-            {/* ── Content ──────────────────────────────────────────────── */}
             <View style={{ padding: layouts.padding, gap: layouts.padding * 0.75 }}>
               {isNotFinishedLesson ? (
-                // Locked state
                 <View style={{ alignItems: "center", paddingVertical: layouts.padding }}>
                   <Icon name="lock" size={28} color={mutedForeground} />
                   <Text
@@ -280,56 +347,115 @@ export function LessonItem({
                   </Text>
                 </View>
               ) : activeTab === "microlessons" ? (
-                // Microlessons list
-                topic.microlessons.map((ml, i) => (
-                  <View
-                    key={ml.microlesson_id}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "flex-start",
-                      gap: layouts.padding * 0.75,
-                      paddingVertical: layouts.padding * 0.5,
-                      borderBottomWidth: i < topic.microlessons.length - 1 ? layouts.borderWidth : 0,
-                      borderBottomColor: border,
-                    }}
-                  >
-                    <View
+                topic.microlessons.map((ml, i) => {
+                  const isRead = readMicroLessons.has(ml.microlesson_id);
+                  return (
+                    <Pressable
+                      key={ml.microlesson_id}
+                      onPress={() => setActiveMicroLesson(ml)}
                       style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 9999,
-                        backgroundColor: isFinishedLesson ? primary : accent,
-                        justifyContent: "center",
-                        alignItems: "center",
-                        marginTop: 1,
+                        flexDirection: "row",
+                        alignItems: "flex-start",
+                        gap: layouts.padding * 0.75,
+                        paddingVertical: layouts.padding * 0.5,
+                        borderBottomWidth: i < topic.microlessons.length - 1 ? layouts.borderWidth : 0,
+                        borderBottomColor: border,
                       }}
                     >
-                      {isFinishedLesson ? (
-                        <Icon name="check" size={14} color={primaryForeground} />
-                      ) : (
-                        <Text style={{ fontSize: 11, fontWeight: "700", color: mutedForeground }}>
-                          {ml.order}
+                      <View
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 9999,
+                          backgroundColor: isRead || isFinishedLesson ? primary : accent,
+                          justifyContent: "center",
+                          alignItems: "center",
+                          marginTop: 1,
+                        }}
+                      >
+                        {isRead || isFinishedLesson ? (
+                          <Icon name="check" size={14} color={primaryForeground} />
+                        ) : (
+                          <Text style={{ fontSize: 11, fontWeight: "700", color: mutedForeground }}>
+                            {ml.order}
+                          </Text>
+                        )}
+                      </View>
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          color: foreground,
+                          fontWeight: "500",
+                          flex: 1,
+                          lineHeight: 18,
+                        }}
+                      >
+                        {ml.title}
+                      </Text>
+                    </Pressable>
+                  );
+                })
+              ) : currentQuiz ? (
+                <View style={{ gap: layouts.padding }}>
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: foreground, lineHeight: 20 }}>
+                    {currentQuiz.question}
+                  </Text>
+
+                  {currentQuiz.options.map((option, optionIndex) => {
+                    const wasAnswered = selectedOptionIndex != null;
+                    const isCorrectOption = optionIndex === currentQuiz.correct;
+                    const isSelected = optionIndex === selectedOptionIndex;
+
+                    let optionBg = secondary;
+                    if (wasAnswered && isCorrectOption) optionBg = "#DDF6D8";
+                    if (wasAnswered && isSelected && !isCorrectOption) optionBg = "#FFE3E0";
+
+                    return (
+                      <Pressable
+                        key={optionIndex}
+                        onPress={() => selectQuizOption(optionIndex)}
+                        disabled={wasAnswered}
+                        style={{
+                          paddingVertical: layouts.padding * 0.75,
+                          paddingHorizontal: layouts.padding,
+                          borderRadius: layouts.radius,
+                          borderWidth: layouts.borderWidth,
+                          borderColor: border,
+                          backgroundColor: optionBg,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: layouts.padding * 0.5,
+                        }}
+                      >
+                        <Text style={{ fontWeight: "700", color: foreground }}>
+                          {String.fromCharCode(65 + optionIndex)}.
                         </Text>
-                      )}
+                        <Text style={{ flex: 1, color: foreground }}>{option}</Text>
+                      </Pressable>
+                    );
+                  })}
+
+                  {selectedOptionIndex != null && (
+                    <View style={{ gap: 8 }}>
+                      <Text
+                        style={{
+                          color: selectedOptionIndex === currentQuiz.correct ? "#1D6B2A" : "#8D2323",
+                          fontWeight: "700",
+                        }}
+                      >
+                        {selectedOptionIndex === currentQuiz.correct ? "Correct" : "Incorrect"}
+                      </Text>
+                      <Text style={{ color: mutedForeground, lineHeight: 18 }}>
+                        {currentQuiz.explanation}
+                      </Text>
                     </View>
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        color: foreground,
-                        fontWeight: "500",
-                        flex: 1,
-                        lineHeight: 18,
-                      }}
-                    >
-                      {ml.title}
-                    </Text>
-                  </View>
-                ))
+                  )}
+                </View>
               ) : (
-                // Quizzes list
                 topic.quizzes.map((quiz, i) => (
-                  <View
+                  <Pressable
                     key={quiz.quiz_id}
+                    onPress={() => openQuiz(i)}
                     style={{
                       flexDirection: "row",
                       alignItems: "flex-start",
@@ -344,19 +470,15 @@ export function LessonItem({
                         width: 28,
                         height: 28,
                         borderRadius: 8,
-                        backgroundColor: isFinishedLesson ? primary : accent,
+                        backgroundColor: accent,
                         justifyContent: "center",
                         alignItems: "center",
                         marginTop: 1,
                       }}
                     >
-                      {isFinishedLesson ? (
-                        <Icon name="check" size={14} color={primaryForeground} />
-                      ) : (
-                        <Text style={{ fontSize: 11, fontWeight: "700", color: mutedForeground }}>
-                          {quiz.order}
-                        </Text>
-                      )}
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: mutedForeground }}>
+                        {quiz.order}
+                      </Text>
                     </View>
                     <Text
                       style={{
@@ -370,34 +492,73 @@ export function LessonItem({
                     >
                       {quiz.question}
                     </Text>
-                  </View>
+                  </Pressable>
                 ))
               )}
             </View>
 
-            {/* ── Action button ─────────────────────────────────────────── */}
             <View style={{ padding: layouts.padding, paddingTop: 0 }}>
-              <Button
-                onPress={() => {
-                  closePopover();
-                  if (isFinishedLesson) {
-                    router.push(`/pratice/${sectionId}/${chapterId}/${lessonId}/${exerciseId}`);
-                  } else if (!isNotFinishedLesson) {
-                    router.push("/lesson");
-                  }
-                }}
-                disabled={isNotFinishedLesson}
-              >
-                {isFinishedLesson
-                  ? "Practice again"
-                  : isNotFinishedLesson
-                    ? "Locked"
-                    : "Start topic"}
-              </Button>
+              {activeTab === "quizzes" && currentQuiz ? (
+                <Button
+                  onPress={goToNextQuizOrClose}
+                  disabled={selectedOptionIndex == null}
+                >
+                  {activeQuizIndex != null && activeQuizIndex < topic.quizzes.length - 1 ? "Next" : "Close"}
+                </Button>
+              ) : (
+                <Button
+                  onPress={() => {
+                    closePopover();
+                    if (isFinishedLesson) {
+                      router.push(`/pratice/${sectionId}/${chapterId}/${lessonId}/${exerciseId}`);
+                    } else if (!isNotFinishedLesson) {
+                      router.push("/lesson");
+                    }
+                  }}
+                  disabled={isNotFinishedLesson}
+                >
+                  {isFinishedLesson
+                    ? "Practice again"
+                    : isNotFinishedLesson
+                      ? "Locked"
+                      : "Start topic"}
+                </Button>
+              )}
             </View>
           </View>
         </Popover>
       )}
+
+      <Modal
+        visible={activeMicroLesson != null}
+        animationType="slide"
+        onRequestClose={() => setActiveMicroLesson(null)}
+      >
+        <View style={{ flex: 1, padding: layouts.padding, backgroundColor: background, gap: layouts.padding }}>
+          <Text style={{ fontSize: 20, fontWeight: "700", color: foreground }}>
+            {activeMicroLesson?.title ?? ""}
+          </Text>
+
+          <ScrollView contentContainerStyle={{ gap: layouts.padding }}>
+            {(activeMicroLesson?.content ?? []).map((paragraph, idx) => (
+              <Text key={idx} style={{ color: foreground, lineHeight: 22 }}>
+                {paragraph}
+              </Text>
+            ))}
+          </ScrollView>
+
+          <Button
+            onPress={() => {
+              if (activeMicroLesson) {
+                setReadMicroLessons((prev) => new Set(prev).add(activeMicroLesson.microlesson_id));
+              }
+              setActiveMicroLesson(null);
+            }}
+          >
+            Done
+          </Button>
+        </View>
+      </Modal>
     </>
   );
 }

@@ -17,6 +17,11 @@ class SyncService {
     private backgroundSyncInterval: NodeJS.Timeout | null = null;
     private isNetworkAvailable: boolean = false;
     private lastQueueCheckTime: number = 0;
+    private onNetworkAvailableCallbacks: Array<() => Promise<void>> = [];
+
+    registerNetworkAvailableCallback(cb: () => Promise<void>): void {
+        this.onNetworkAvailableCallbacks.push(cb);
+    }
 
     async addToQueue(queueItem: SyncQueueInput): Promise<void> {
         const data = {
@@ -53,6 +58,9 @@ class SyncService {
             if (shouldSync) {
                 // console.log('[Network Monitor] Network is good, starting background sync...');
                 this.startBackgroundSync();
+                for (const cb of this.onNetworkAvailableCallbacks) {
+                    cb().catch(err => console.error('[Network] Callback error:', err));
+                }
                 // Try immediate sync on network restoration
                 try {
                     await this.performSync();
@@ -208,8 +216,9 @@ class SyncService {
         try {
             await DatabaseService.init();
             const queueItems = await DatabaseService.getSyncQueue() as SyncQueueItem[];
+            const unsyncedQuizResults = await DatabaseService.getUnsyncedQuizResults();
 
-            if (queueItems.length > 0) {
+            if (queueItems.length > 0 || unsyncedQuizResults.length > 0) {
                 // console.log(`[Background Sync] Found ${queueItems.length} unsynced items, starting sync...`);
                 await this.performSync(true); // Force sync to bypass throttle
             }
@@ -241,6 +250,7 @@ class SyncService {
             // console.log('[Sync] Database initialized');
 
             await this.processSyncQueue();
+            await this.syncQuizResults();
 
             await AsyncStorage.setItem(SYNC_INTERVAL_KEY, Date.now().toString());
             // console.log('[Sync] ===== SYNC COMPLETED SUCCESSFULLY =====');
@@ -304,7 +314,7 @@ class SyncService {
             case 'CREATE':
                 if (!data) throw new Error('No data for CREATE operation');
                 // console.log(`[SyncItem] Creating quiz result with data:`, data);
-                await ApiService.createQuizResult(JSON.parse(data));
+                await ApiService.submitQuizResult(JSON.parse(data));
                 // console.log(`[SyncItem] Quiz result created successfully`);
 
                 // Mark as synced in local DB
@@ -320,6 +330,26 @@ class SyncService {
             case 'UPDATE':
             case 'DELETE':
                 throw new Error(`Operation ${operation} not supported for quiz results`);
+        }
+    }
+
+    async syncQuizResults(): Promise<void> {
+        const unsynced = await DatabaseService.getUnsyncedQuizResults();
+        for (const result of unsynced) {
+            try {
+                await ApiService.submitQuizResult({
+                    quiz_id: result.quiz_id,
+                    topic_id: result.topic_id,
+                    chapter_id: result.chapter_id,
+                    selected_option: result.selected_option,
+                    is_correct: result.is_correct === 1,
+                    time_taken_ms: result.time_taken_ms ?? undefined,
+                    attempted_at: result.attempted_at,
+                });
+                await DatabaseService.markQuizResultSynced(result.id);
+            } catch (err) {
+                console.error('[Sync] Failed to sync quiz result', result.id, err);
+            }
         }
     }
 }

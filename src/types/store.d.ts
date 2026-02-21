@@ -23,11 +23,14 @@ export interface SyncQueueItem {
 // Quiz result (one row per attempt)
 export interface QuizResult {
     id: number;
-    quiz_id: number;
-    score: number;
-    total_questions: number;
-    answers_json: string;
-    created_at: number;
+    quiz_id: string;
+    topic_id: string;
+    chapter_id: string;
+    selected_option: number;
+    is_correct: number;
+    time_taken_ms?: number | null;
+    attempted_at: number;
+    is_synced: number;
 }
 
 export interface QuizResultAnswer {
@@ -69,7 +72,7 @@ export interface StoredTopic {
     quizzes: StoredQuiz[];
 }
 
-export interface CachedChapterRow {
+export interface ChapterRow {
     id: number;
     chapter_id: string;
     chapter_name: string;
@@ -77,19 +80,24 @@ export interface CachedChapterRow {
     subject_id: string;
     subject_name: string;
     total_topics: number;
-    content_json: string;   // JSON.stringify(StoredTopic[])
+    content_json: string;
     fetched_at: number;
 }
 
-export interface CachedChapter extends Omit<CachedChapterRow, 'content_json'> {
+export interface CachedChapter extends Omit<ChapterRow, 'content_json'> {
     topics: StoredTopic[];
 }
 
-export interface CachedChapterInput {
+export interface ChapterInput {
     chapter_id: string;
     chapter_name: string;
     chapter_order: number;
     subject_id: string;
     subject_name: string;
+    total_topics?: number;
     topics: StoredTopic[];
 }
+
+export type CachedChapterRow = ChapterRow;
+export type CachedChapterInput = ChapterInput;
+export type QuizResultRow = QuizResult;
