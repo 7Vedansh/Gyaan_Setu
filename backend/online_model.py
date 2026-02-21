@@ -30,7 +30,7 @@ Guidelines:
 - Include relevant formulas when applicable
 - Answer only in english.
 - Keep responses concise but complete
-- Dont mention anything about hindi or marathi
+- Do NOT mention anything about hindi or marathi
 - Never fabricate information""",
 
     "hi": """आप विज्ञान शिक्षा में विशेषज्ञ AI ट्यूटर हैं।
