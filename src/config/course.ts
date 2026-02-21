@@ -49,6 +49,11 @@ export const courseConfig: CourseConfig = {
       label: "LEARN",
       href: "/learn",
     },
+    // {
+    //   icon: "heart",
+    //   label: "ANIMATION",
+    //   href: "/animation",
+    // },
     {
       icon: "targetCircle",
       label: "PARTH AI",
