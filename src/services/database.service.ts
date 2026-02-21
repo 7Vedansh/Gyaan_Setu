@@ -1,3 +1,4 @@
+import { CachedChapterInput, CachedChapterRow } from '@/types/store';
 import * as SQLite from 'expo-sqlite';
 import type { ResultSet, ResultSetError } from 'expo-sqlite';
 
@@ -72,6 +73,19 @@ class DatabaseService {
                 is_synced INTEGER DEFAULT 0
             )`, args: []
             },
+            {
+                sql: `CREATE TABLE IF NOT EXISTS cached_chapters (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    chapter_id      TEXT    NOT NULL UNIQUE,
+                    chapter_name    TEXT    NOT NULL,
+                    chapter_order   INTEGER NOT NULL,
+                    subject_id      TEXT    NOT NULL,
+                    subject_name    TEXT    NOT NULL,
+                    total_topics    INTEGER NOT NULL DEFAULT 0,
+                    content_json    TEXT    NOT NULL,
+                    fetched_at      INTEGER NOT NULL
+                );`,args: []
+            }
         ];
 
         const results = await this.db.execAsync(queries, false);
@@ -82,7 +96,9 @@ class DatabaseService {
         const indexQueries = [
             { sql: `CREATE INDEX IF NOT EXISTS idx_sync_queue_created ON sync_queue(created_at)`, args: [] },
             { sql: `CREATE INDEX IF NOT EXISTS idx_quiz_results_quiz_id ON quiz_results(quiz_id)`, args: [] },
-        ];
+            {sql: `CREATE INDEX IF NOT EXISTS idx_cached_chapters_chapter_id ON cached_chapters(chapter_id);`, args: [] },
+            {sql: `CREATE INDEX IF NOT EXISTS idx_cached_chapters_subject_id ON cached_chapters(subject_id);`, args: [] },
+            ];
 
         const indexResults = await this.db.execAsync(indexQueries, false);
         const indexErr = indexResults.find((r): r is ResultSetError => r != null && 'error' in r);
@@ -157,6 +173,97 @@ class DatabaseService {
             'SELECT COUNT(*) as count FROM sync_queue'
         );
         return results[0]?.count || 0;
+    }
+    
+    /**
+ * Upsert a chapter into the cache.
+ * If a row with the same chapter_id already exists it is replaced cleanly.
+ */
+    async upsertCachedChapter(input: CachedChapterInput): Promise<void> {
+        if (!this.db) throw new Error('Database not initialized');
+
+        const sql = `
+        INSERT INTO cached_chapters
+            (chapter_id, chapter_name, chapter_order, subject_id, subject_name, total_topics, content_json, fetched_at)
+        VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(chapter_id) DO UPDATE SET
+            chapter_name  = excluded.chapter_name,
+            chapter_order = excluded.chapter_order,
+            subject_id    = excluded.subject_id,
+            subject_name  = excluded.subject_name,
+            total_topics  = excluded.total_topics,
+            content_json  = excluded.content_json,
+            fetched_at    = excluded.fetched_at
+    `;
+
+        const args = [
+            input.chapter_id,
+            input.chapter_name,
+            input.chapter_order,
+            input.subject_id,
+            input.subject_name,
+            input.topics.length,
+            JSON.stringify(input.topics),
+            Date.now(),
+        ];
+
+        const results = await this.db.execAsync([{ sql, args }], false);
+        const err = results.find((r): r is ResultSetError => r != null && 'error' in r);
+        if (err) throw err.error;
+    }
+
+    /**
+     * Fetch a single cached chapter row by chapter_id.
+     * Returns null if not cached.
+     */
+    async getCachedChapter(chapterId: string): Promise<CachedChapterRow | null> {
+        const rows = await this.query<CachedChapterRow>(
+            'SELECT * FROM cached_chapters WHERE chapter_id = ? LIMIT 1',
+            [chapterId]
+        );
+        return rows[0] ?? null;
+    }
+
+    /**
+     * Fetch all cached chapters for a subject, ordered correctly.
+     */
+    async getCachedChaptersBySubject(subjectId: string): Promise<CachedChapterRow[]> {
+        return this.query<CachedChapterRow>(
+            'SELECT * FROM cached_chapters WHERE subject_id = ? ORDER BY chapter_order ASC',
+            [subjectId]
+        );
+    }
+
+    /**
+     * Check if a chapter is cached without loading content_json.
+     */
+    async isChapterCached(chapterId: string): Promise<boolean> {
+        const rows = await this.query<{ count: number }>(
+            'SELECT COUNT(*) as count FROM cached_chapters WHERE chapter_id = ?',
+            [chapterId]
+        );
+        return (rows[0]?.count ?? 0) > 0;
+    }
+
+    /**
+     * Delete a single chapter from the cache.
+     */
+    async deleteCachedChapter(chapterId: string): Promise<void> {
+        await this.runSql(
+            'DELETE FROM cached_chapters WHERE chapter_id = ?',
+            [chapterId]
+        );
+    }
+
+    /**
+     * Delete all cached chapters for a subject.
+     */
+    async deleteCachedChaptersBySubject(subjectId: string): Promise<void> {
+        await this.runSql(
+            'DELETE FROM cached_chapters WHERE subject_id = ?',
+            [subjectId]
+        );
     }
 
     getDatabase(): ExpoSQLiteDatabase | null {

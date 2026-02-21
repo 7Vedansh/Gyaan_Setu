@@ -45,3 +45,51 @@ export interface DatabaseResult {
         item: (index: number) => any;
     };
 }
+
+export interface StoredQuiz {
+    quiz_id: string;
+    question: string;
+    options: string[];
+    correct: number;
+    explanation: string;
+    order: number;
+}
+
+export interface StoredMicroLesson {
+    microlesson_id: string;
+    title: string;
+    content: string[];
+    order: number;
+}
+
+export interface StoredTopic {
+    topic_id: string;
+    topic_order: number;
+    microlessons: StoredMicroLesson[];
+    quizzes: StoredQuiz[];
+}
+
+export interface CachedChapterRow {
+    id: number;
+    chapter_id: string;
+    chapter_name: string;
+    chapter_order: number;
+    subject_id: string;
+    subject_name: string;
+    total_topics: number;
+    content_json: string;   // JSON.stringify(StoredTopic[])
+    fetched_at: number;
+}
+
+export interface CachedChapter extends Omit<CachedChapterRow, 'content_json'> {
+    topics: StoredTopic[];
+}
+
+export interface CachedChapterInput {
+    chapter_id: string;
+    chapter_name: string;
+    chapter_order: number;
+    subject_id: string;
+    subject_name: string;
+    topics: StoredTopic[];
+}
