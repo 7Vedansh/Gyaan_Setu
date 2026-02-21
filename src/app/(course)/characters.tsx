@@ -3,7 +3,7 @@ import { Pressable, ScrollView } from "react-native";
 
 import { Text, View } from "@/components/themed";
 import { layouts } from "@/constants/layouts";
-import { courseContent } from "@/content/courses/data";
+import { useCourseContent } from "@/hooks/useCourseContent";
 import { useBreakpoint } from "@/context/breakpoints";
 import { useCourse } from "@/context/course";
 import { useTheme } from "@/context/theme";
@@ -12,12 +12,13 @@ export default function Characters() {
   const { courseId } = useCourse();
   const breakpoint = useBreakpoint();
   const { mutedForeground, border, foreground, accent, primary } = useTheme();
+  const { course } = useCourseContent();
   const [activeIndex, setActiveIndex] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
 
   if (!courseId) return null;
 
-  const characters = courseContent.characters[courseId];
+  const characters = course.characters[courseId];
 
   return (
     <View style={{ flex: 1 }}>
@@ -36,8 +37,8 @@ export default function Characters() {
                 breakpoint === "sm"
                   ? layouts.padding
                   : breakpoint === "md"
-                  ? layouts.padding * 2
-                  : layouts.padding * 3,
+                    ? layouts.padding * 2
+                    : layouts.padding * 3,
               borderBottomWidth: layouts.borderWidth,
               borderBottomColor: activeIndex === index ? primary : border,
             }}
@@ -71,11 +72,11 @@ export default function Characters() {
           const size =
             breakpoint === "sm"
               ? (containerWidth -
-                  ((layouts.padding / 2) * 4 + layouts.padding * 2)) /
-                5
+                ((layouts.padding / 2) * 4 + layouts.padding * 2)) /
+              5
               : (containerWidth -
-                  (layouts.padding * 4 + layouts.padding * 2.0079 * 2)) /
-                5;
+                (layouts.padding * 4 + layouts.padding * 2.0079 * 2)) /
+              5;
 
           return (
             <Pressable key={index}>

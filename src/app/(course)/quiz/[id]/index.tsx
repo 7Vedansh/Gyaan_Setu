@@ -1,10 +1,13 @@
 import { Text, View } from "@/components/themed";
+import { Icon } from "@/components/icons";
 import { Button } from "@/components/ui/Button";
-import { StyleSheet, ScrollView, Pressable } from "react-native";
+import { StyleSheet, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { useState, useCallback } from "react";
-import { quizData } from "@/content/courses/data/quizzes/data";
-import { Quiz, Question } from "@/types/course";
+import { useState, useCallback, useEffect } from "react";
+import {
+    getQuizzesByTopic,
+    type QuizResponse,
+} from "@/services/microLesson.service";
 import QuizService from "@/services/quiz.service";
 import { QuizResultAnswer } from "@/types/store";
 import { theme } from "@/theme/theme";
@@ -19,10 +22,14 @@ const hexToRgba = (hex: string, opacity: number) => {
 
 export default function QuizDetails(): JSX.Element {
     const { id } = useLocalSearchParams<{ id: string }>();
-    const parsedId = id ? parseInt(id, 10) : null;
-    const quiz = parsedId ? quizData.find((q) => q.id === parsedId) : null;
 
-    const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
+    // ── Backend data ────────────────────────────────────────────────────
+    const [quizzes, setQuizzes] = useState<QuizResponse[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [fetchError, setFetchError] = useState<string | null>(null);
+
+    // ── Quiz interaction ────────────────────────────────────────────────
+    const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
     const [submitted, setSubmitted] = useState(false);
     const [saving, setSaving] = useState(false);
     const [result, setResult] = useState<{
@@ -31,34 +38,73 @@ export default function QuizDetails(): JSX.Element {
         answers: QuizResultAnswer[];
     } | null>(null);
 
-    const selectOption = useCallback((questionIndex: number, option: string) => {
-        if (submitted) return;
-        setSelectedAnswers((prev) => ({ ...prev, [questionIndex]: option }));
-    }, [submitted]);
+    // ── Fetch quiz questions from backend ───────────────────────────────
+    useEffect(() => {
+        let cancelled = false;
+
+        async function fetchData() {
+            if (!id) return;
+
+            setIsLoading(true);
+            setFetchError(null);
+
+            try {
+                // `id` is the topicId from the listing page
+                const fetchedQuizzes = await getQuizzesByTopic(id);
+                if (cancelled) return;
+                setQuizzes(fetchedQuizzes);
+            } catch (err) {
+                if (cancelled) return;
+                const message = err instanceof Error ? err.message : "Failed to load quiz";
+                setFetchError(message);
+                console.error("[QuizDetails] Fetch error:", err);
+            } finally {
+                if (!cancelled) setIsLoading(false);
+            }
+        }
+
+        fetchData();
+        return () => { cancelled = true; };
+    }, [id]);
+
+    // ── Select an option ────────────────────────────────────────────────
+    const selectOption = useCallback(
+        (questionIndex: number, optionIndex: number) => {
+            if (submitted) return;
+            setSelectedAnswers((prev) => ({ ...prev, [questionIndex]: optionIndex }));
+        },
+        [submitted]
+    );
 
     const allAnswered =
-        quiz != null &&
-        quiz.questions.length > 0 &&
-        quiz.questions.every((_, i) => selectedAnswers[i] != null && selectedAnswers[i] !== "");
+        quizzes.length > 0 &&
+        quizzes.every((_, i) => selectedAnswers[i] != null);
 
+    // ── Submit quiz ─────────────────────────────────────────────────────
     const handleSubmit = useCallback(async () => {
-        if (!quiz || !parsedId || !allAnswered || saving) return;
+        if (quizzes.length === 0 || !allAnswered || saving) return;
 
         setSaving(true);
         try {
-            const answers: QuizResultAnswer[] = quiz.questions.map((q: Question, index: number) => {
-                const selected = selectedAnswers[index];
-                const correct = selected === q.answer;
-                return {
-                    questionIndex: index,
-                    selectedAnswer: selected,
-                    correct,
-                };
-            });
+            const answers: QuizResultAnswer[] = quizzes.map(
+                (q: QuizResponse, index: number) => {
+                    const selectedIdx = selectedAnswers[index];
+                    const isCorrect = selectedIdx === q.correct;
+                    return {
+                        questionIndex: index,
+                        selectedAnswer: q.options[selectedIdx] ?? "",
+                        correct: isCorrect,
+                    };
+                }
+            );
             const score = answers.filter((a) => a.correct).length;
-            const total = quiz.questions.length;
+            const total = quizzes.length;
 
-            await QuizService.saveQuizResult(parsedId, score, total, answers);
+            // Save locally using a hash of the topicId as a numeric quiz_id
+            // so existing SQLite schema works without migration.
+            const numericId = hashStringToInt(id ?? "0");
+            await QuizService.saveQuizResult(numericId, score, total, answers);
+
             setResult({ score, total, answers });
             setSubmitted(true);
         } catch (err) {
@@ -66,26 +112,50 @@ export default function QuizDetails(): JSX.Element {
         } finally {
             setSaving(false);
         }
-    }, [quiz, parsedId, allAnswered, saving, selectedAnswers]);
+    }, [quizzes, allAnswered, saving, selectedAnswers, id]);
 
+    // ── Try again ───────────────────────────────────────────────────────
     const handleTryAgain = useCallback(() => {
         setSelectedAnswers({});
         setSubmitted(false);
         setResult(null);
     }, []);
 
-    if (!quiz) {
+    // ── Loading ─────────────────────────────────────────────────────────
+    if (isLoading) {
         return (
-            <View style={styles.container}>
-                <Text style={styles.error}>Quiz not found</Text>
+            <View style={styles.centered}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <Text style={styles.loadingText}>Loading quiz…</Text>
             </View>
         );
     }
 
+    // ── Error ────────────────────────────────────────────────────────────
+    if (fetchError) {
+        return (
+            <View style={styles.centered}>
+                <Icon name="closeCircle" size={48} color={theme.colors.status.error} />
+                <Text style={styles.errorText}>{fetchError}</Text>
+            </View>
+        );
+    }
+
+    // ── No questions ────────────────────────────────────────────────────
+    if (quizzes.length === 0) {
+        return (
+            <View style={styles.centered}>
+                <Icon name="notebook" size={48} color={theme.colors.text.secondary} />
+                <Text style={styles.emptyText}>No questions found for this topic.</Text>
+            </View>
+        );
+    }
+
+    // ── Results screen ──────────────────────────────────────────────────
     if (submitted && result) {
         return (
             <ScrollView style={styles.container}>
-                <Text style={styles.title}>{quiz.title}</Text>
+                <Text style={styles.pageTitle}>Quiz Complete</Text>
                 <View style={styles.resultCard}>
                     <Text style={styles.resultTitle}>Quiz complete</Text>
                     <Text style={styles.resultScore}>
@@ -99,12 +169,12 @@ export default function QuizDetails(): JSX.Element {
                     </Text>
                 </View>
                 <View style={styles.questionsContainer}>
-                    {quiz.questions.map((q, index) => {
+                    {quizzes.map((q, index) => {
                         const answerInfo = result.answers[index];
                         const isCorrect = answerInfo?.correct ?? false;
                         return (
                             <View
-                                key={index}
+                                key={q._id}
                                 style={[
                                     styles.questionCard,
                                     {
@@ -121,8 +191,11 @@ export default function QuizDetails(): JSX.Element {
                                 </Text>
                                 {!isCorrect && (
                                     <Text style={styles.correctAnswer}>
-                                        Correct: {q.answer}
+                                        Correct: {q.options[q.correct]}
                                     </Text>
+                                )}
+                                {q.explanation && (
+                                    <Text style={styles.explanation}>{q.explanation}</Text>
                                 )}
                             </View>
                         );
@@ -138,41 +211,47 @@ export default function QuizDetails(): JSX.Element {
         );
     }
 
+    // ── Quiz questions ──────────────────────────────────────────────────
     return (
         <ScrollView style={styles.container}>
-            <Text style={styles.title}>{quiz.title}</Text>
-            <Text style={styles.description}>{quiz.description}</Text>
+            <Text style={styles.pageTitle}>Quiz</Text>
+            <Text style={styles.pageDescription}>
+                {quizzes.length} question{quizzes.length !== 1 ? "s" : ""}
+            </Text>
             <View style={styles.questionsContainer}>
-                {quiz.questions.map((q, index) => (
-                    <View key={index} style={styles.questionCard}>
-                        <Text style={styles.question}>
-                            {index + 1}. {q.question}
-                        </Text>
-                        {q.options.map((option) => {
-                            const isSelected = selectedAnswers[index] === option;
-                            return (
-                                <Pressable
-                                    key={option}
-                                    onPress={() => selectOption(index, option)}
-                                    style={[
-                                        styles.optionRow,
-                                        isSelected && styles.optionRowSelected,
-                                    ]}
-                                >
-                                    <View
+                {quizzes.map((q, index) => {
+                    const selectedIdx = selectedAnswers[index];
+                    return (
+                        <View key={q._id} style={styles.questionCard}>
+                            <Text style={styles.question}>
+                                {index + 1}. {q.question}
+                            </Text>
+                            {q.options.map((option, optIdx) => {
+                                const isSelected = selectedIdx === optIdx;
+                                return (
+                                    <Pressable
+                                        key={optIdx}
+                                        onPress={() => selectOption(index, optIdx)}
                                         style={[
-                                            styles.radioOuter,
-                                            isSelected && styles.radioOuterSelected,
+                                            styles.optionRow,
+                                            isSelected && styles.optionRowSelected,
                                         ]}
                                     >
-                                        {isSelected && <View style={styles.radioInner} />}
-                                    </View>
-                                    <Text style={styles.optionText}>{option}</Text>
-                                </Pressable>
-                            );
-                        })}
-                    </View>
-                ))}
+                                        <View
+                                            style={[
+                                                styles.radioOuter,
+                                                isSelected && styles.radioOuterSelected,
+                                            ]}
+                                        >
+                                            {isSelected && <View style={styles.radioInner} />}
+                                        </View>
+                                        <Text style={styles.optionText}>{option}</Text>
+                                    </Pressable>
+                                );
+                            })}
+                        </View>
+                    );
+                })}
             </View>
             <Button
                 label={saving ? "Submitting…" : "Submit quiz"}
@@ -185,19 +264,60 @@ export default function QuizDetails(): JSX.Element {
     );
 }
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Simple string → positive integer hash.
+ * Used to convert MongoDB ObjectId strings into numeric quiz_ids
+ * for the existing SQLite quiz_results table.
+ */
+function hashStringToInt(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = (hash << 5) - hash + char;
+        hash |= 0; // Convert to 32-bit integer
+    }
+    return Math.abs(hash);
+}
+
+// ─── Styles ─────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 16,
         backgroundColor: theme.colors.background,
     },
-    title: {
-        fontSize: 24,
+    centered: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 32,
+        backgroundColor: theme.colors.background,
+        gap: 12,
+    },
+    loadingText: {
+        fontSize: 14,
+        color: theme.colors.text.secondary,
+    },
+    errorText: {
+        fontSize: 14,
+        color: theme.colors.status.error,
+        textAlign: "center",
+    },
+    emptyText: {
+        fontSize: 16,
         fontWeight: "bold",
-        marginBottom: 16,
         color: theme.colors.text.primary,
     },
-    description: {
+    pageTitle: {
+        fontSize: 24,
+        fontWeight: "bold",
+        marginBottom: 4,
+        color: theme.colors.text.primary,
+    },
+    pageDescription: {
         fontSize: 16,
         color: theme.colors.text.secondary,
         marginBottom: 16,
@@ -260,11 +380,6 @@ const styles = StyleSheet.create({
         marginTop: 8,
         marginBottom: 32,
     },
-    error: {
-        fontSize: 18,
-        color: theme.colors.status.error,
-        textAlign: "center",
-    },
     resultCard: {
         backgroundColor: theme.colors.surface,
         padding: 20,
@@ -298,6 +413,12 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: theme.colors.status.success,
         marginTop: 2,
+    },
+    explanation: {
+        fontSize: 13,
+        color: theme.colors.text.secondary,
+        marginTop: 6,
+        fontStyle: "italic",
     },
     tryAgainButton: {
         marginTop: 8,

@@ -45,6 +45,7 @@ export type ExerciseItemVariant = FlashCardExercise | TranslateExercise;
 
 export type ExerciseSet = {
   id: number;
+  _id?: string;
   xp: number;
   difficulty: "easy" | "medium" | "hard";
   items: ExerciseItemVariant[];
@@ -52,12 +53,14 @@ export type ExerciseSet = {
 
 export type Lesson = {
   id: number;
+  _id?: string;
   description: Translations;
   exercises: ExerciseSet[];
 };
 
 export type Chapter = {
   id: number;
+  _id?: string;
   title: Translations;
   description: Translations;
   lessons: Lesson[];
@@ -65,6 +68,7 @@ export type Chapter = {
 
 export type Section = {
   id: number;
+  _id?: string;
   title: Translations;
   chapters: Chapter[];
 };

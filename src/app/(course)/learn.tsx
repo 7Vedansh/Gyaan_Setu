@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ScrollView } from "react-native";
+import { ActivityIndicator, ScrollView } from "react-native";
 
 import { CourseDetailsBar } from "@/components/course-details-bar";
 import { Icon } from "@/components/icons";
@@ -9,7 +9,7 @@ import { Text, View } from "@/components/themed";
 import { Button } from "@/components/ui/Button";
 import { colors } from "@/constants/colors";
 import { layouts } from "@/constants/layouts";
-import { courseContent } from "@/content/courses/data";
+import { useCourseContent } from "@/hooks/useCourseContent";
 import { useBreakpoint } from "@/context/breakpoints";
 import { useCourse } from "@/context/course";
 import { DEFAULT_LANGUAGE_CODE } from "@/constants/default";
@@ -25,14 +25,24 @@ export default function Learn() {
   const { mutedForeground, border, accent, secondary, foreground, primary } =
     useTheme();
   const breakpoint = useBreakpoint();
+  const { course, isLoading } = useCourseContent();
 
   const [headerHeight, setHeaderHeight] = useState(0);
 
   let isOdd = true;
   let translateX = 0;
 
-  const currentSection = courseContent.sections[courseProgress.sectionId];
-  if (!currentSection) return null;
+  const currentSection = course.sections[courseProgress.sectionId];
+  if (!currentSection) {
+    if (isLoading) {
+      return (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={primary} />
+        </View>
+      );
+    }
+    return null;
+  }
 
   const renderCourseChapter = (chapter: Chapter, chapterIndex: number) => (
     <View

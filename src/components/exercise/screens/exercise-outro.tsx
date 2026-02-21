@@ -7,7 +7,7 @@ import { Shell } from "@/components/shell";
 import { Text, View } from "@/components/themed";
 import { Button } from "@/components/ui/Button";
 import { layouts } from "@/constants/layouts";
-import { nextProgress } from "@/content/courses/data";
+import { nextProgress } from "@/services/course.service";
 import { useBreakpoint } from "@/context/breakpoints";
 import { useCourse } from "@/context/course";
 import { useTheme } from "@/context/theme";

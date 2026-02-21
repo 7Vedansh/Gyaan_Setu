@@ -2,7 +2,7 @@ import { useLocalSearchParams } from "expo-router";
 
 import ExerciseScreen from "@/components/exercise/screens/exercise";
 import { Metadata } from "@/components/metadata";
-import { getExercise } from "@/content/courses/data";
+import { getExercise } from "@/services/course.service";
 
 export default function Practice() {
   const { sectionId, chapterId, lessonId, exerciseId } = useLocalSearchParams();
