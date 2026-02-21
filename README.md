@@ -49,5 +49,5 @@ Follow these steps to get Gyaan Setu up and running on your local machine:
    - Use Expo CLI to run the app on an emulator.
 
 6. **Change ip in D:\Gyaan_Setu\src\config\env.ts**
-   - Use ***ipconfig*** command to get ip address
+   - Use ```ipconfig``` command to get ip address
    - Insert IPv4 address in API_URL
