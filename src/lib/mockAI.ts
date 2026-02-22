@@ -150,7 +150,7 @@ export function isSpeechSupported(): boolean {
 
 export function detectLanguage(text: string): "en" | "hi" | "mr" {
   if (/[\u0900-\u097F]/.test(text)) {
-    const marathiKeywords = ["आहे", "का", "मध्ये", "सांग"];
+    const marathiKeywords = ["आहे", "का", "मध्ये", "सांग", "काय", "कसा", "कुठे", "केव्हा", "ला", "चा", "ची", "चे"];
     return marathiKeywords.some(word => text.includes(word)) ? "mr" : "hi";
   }
   return "en";

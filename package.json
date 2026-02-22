@@ -51,7 +51,8 @@
     "react-responsive": "^9.0.2",
     "zustand": "^4.5.0",
     "expo-linear-gradient": "~12.3.0",
-    "expo-blur": "~12.4.1"
+    "expo-blur": "~12.4.1",
+    "expo-speech": "~11.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
