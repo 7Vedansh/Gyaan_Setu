@@ -1,11 +1,20 @@
-# ingest.py
-# Multi-PDF → High Quality JSON for Offline RAG
+﻿# ingest.py
+# Multi-PDF â†’ High Quality JSON for Offline RAG
 
 import os
 import json
 import re
-from unstructured.partition.pdf import partition_pdf
-from unstructured.chunking.title import chunk_by_title
+try:
+    from unstructured.partition.pdf import partition_pdf
+    from unstructured.chunking.title import chunk_by_title
+except ImportError as exc:
+    if "open_filename" in str(exc):
+        raise ImportError(
+            "Incompatible PDF parser setup: uninstall `pdfminer` and install "
+            "`pdfminer.six==20221105`. Run: pip uninstall -y pdfminer && "
+            "pip install pdfminer.six==20221105"
+        ) from exc
+    raise
 
 DOCS_FOLDER = "docs"
 OUTPUT_FOLDER = "vector_store"
@@ -40,7 +49,7 @@ def is_valid_chunk(text: str) -> bool:
 
 def process_pdf(pdf_path):
 
-    print(f"\n📄 Processing: {pdf_path}")
+    print(f"\nðŸ“„ Processing: {pdf_path}")
 
     elements = partition_pdf(
         filename=pdf_path,
@@ -75,7 +84,7 @@ def process_pdf(pdf_path):
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(documents, f, ensure_ascii=False, indent=2)
 
-    print(f"✅ Saved {len(documents)} chunks → {output_path}")
+    print(f"âœ… Saved {len(documents)} chunks â†’ {output_path}")
 
 
 # -----------------------------
@@ -84,7 +93,7 @@ def process_pdf(pdf_path):
 
 def ingest():
 
-    print("🚀 MULTI-PDF INGEST STARTED")
+    print("ðŸš€ MULTI-PDF INGEST STARTED")
 
     pdf_files = [
         os.path.join(DOCS_FOLDER, file)
@@ -93,13 +102,13 @@ def ingest():
     ]
 
     if not pdf_files:
-        print("❌ No PDFs found in docs folder.")
+        print("âŒ No PDFs found in docs folder.")
         return
 
     for pdf_path in pdf_files:
         process_pdf(pdf_path)
 
-    print("\n🎉 All PDFs processed successfully!")
+    print("\nðŸŽ‰ All PDFs processed successfully!")
 
 
 if __name__ == "__main__":

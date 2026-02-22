@@ -5,6 +5,7 @@ import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { VarelaRound_400Regular } from "@expo-google-fonts/varela-round";
 import { Nunito_400Regular, Nunito_700Bold } from "@expo-google-fonts/nunito";
+import { LogBox } from "react-native";
 
 import { StatusBar } from "@/components/status-bar";
 import { BreakpointsProvider } from "@/context/breakpoints";
@@ -25,6 +26,7 @@ export const unstable_settings = {
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+LogBox.ignoreAllLogs(true);
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({

@@ -1,12 +1,16 @@
 import React from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
+import { router } from "expo-router";
 import { theme } from "@/theme/theme";
 import { Text } from "@/components/ui/Text";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { User, LogOut } from "lucide-react-native";
+import { useCourse } from "@/context/course";
 
 export const Profile = () => {
+    const { setCourseId } = useCourse();
+
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.header}>
@@ -54,7 +58,10 @@ export const Profile = () => {
                 <Button
                     label="Log Out"
                     variant="danger"
-                    onPress={() => { }}
+                    onPress={() => {
+                        setCourseId(null);
+                        router.replace("/register");
+                    }}
                     leftIcon={<LogOut size={16} color={theme.colors.text.primary} />}
                 />
             </View>

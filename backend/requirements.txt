@@ -1,4 +1,4 @@
-# Core API Framework
+﻿# Core API Framework
 fastapi==0.109.0
 uvicorn==0.27.0
 pydantic==2.5.0
@@ -10,6 +10,7 @@ numpy==1.24.3
 
 # Document Processing
 unstructured==0.12.0
+pdfminer.six==20221105
 pillow==10.2.0
 pdf2image==1.17.0
 pytesseract==0.3.10
@@ -32,3 +33,4 @@ colorama==0.4.6
 # Optional: For better PDF processing
 # poppler-utils (system package, install via apt/brew/choco)
 # tesseract-ocr (system package, install via apt/brew/choco)
+
