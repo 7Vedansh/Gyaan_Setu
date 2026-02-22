@@ -1,47 +1,103 @@
 // offlineRag.ts
-// Optimized Offline RAG with TF-IDF + Sentence-Level Extraction
+// Stable Multilingual Offline RAG (Expo Safe Version)
 
-import documents from "../assets/documents.json";
+import science_marathi from "../assets/science_marathi_clean.json";
+import science from "../assets/science.json";
 
-// -----------------------------
-// STOPWORDS
-// -----------------------------
-const STOPWORDS = new Set([
-  "is","are","was","were","the","a","an",
-  "what","why","how","when","where",
-  "and","or","of","to","in","on","for",
-  "with","from","that","this",
+/* =====================================================
+   1️⃣ LANGUAGE DETECTOR
+===================================================== */
 
-  // Hindi
-  "क्या","कैसे","क्यों","है","में","और","का","की","के",
-
-  // Marathi
-  "आहे","का","मध्ये","आणि","की","चे","चा"
-]);
-
-// -----------------------------
-// TOKENIZER
-// -----------------------------
-function tokenize(text: string): string[] {
-  const words = text.toLowerCase().match(/\w+/g);
-  if (!words) return [];
-  return words.filter(w => !STOPWORDS.has(w) && w.length > 2);
+function detectLanguageFromScript(text: string): "english" | "marathi" {
+  const hasDevanagari = /[\u0900-\u097F]/.test(text);
+  return hasDevanagari ? "marathi" : "english";
 }
 
-// -----------------------------
-// SENTENCE SPLITTER
-// -----------------------------
+/* =====================================================
+   2️⃣ STOPWORDS
+===================================================== */
+
+const STOPWORDS = new Set([
+  // English
+  "is",
+  "are",
+  "was",
+  "were",
+  "the",
+  "a",
+  "an",
+  "what",
+  "why",
+  "how",
+  "when",
+  "where",
+  "and",
+  "or",
+  "of",
+  "to",
+  "in",
+  "on",
+  "for",
+  "with",
+  "from",
+  "that",
+  "this",
+
+  // Hindi
+  "क्या",
+  "कैसे",
+  "क्यों",
+  "है",
+  "में",
+  "और",
+  "का",
+  "की",
+  "के",
+
+  // Marathi
+  "आहे",
+  "का",
+  "मध्ये",
+  "आणि",
+  "की",
+  "चे",
+  "चा",
+]);
+
+/* =====================================================
+   3️⃣ TOKENIZER (React Native SAFE)
+===================================================== */
+/*
+  This tokenizer works safely in Expo/Hermes.
+  It explicitly supports:
+  - English letters
+  - Numbers
+  - Devanagari characters
+*/
+
+function tokenize(text: string): string[] {
+  const words = text.toLowerCase().match(/[\u0900-\u097Fa-z0-9]+/g);
+
+  if (!words) return [];
+
+  return words.filter((w) => !STOPWORDS.has(w) && w.length > 2);
+}
+
+/* =====================================================
+   4️⃣ SENTENCE SPLITTER
+===================================================== */
+
 function splitSentences(text: string): string[] {
   return text
     .replace(/\n+/g, " ")
     .split(/(?<=[.?!])\s+/)
-    .map(s => s.trim())
-    .filter(s => s.length > 40);
+    .map((s) => s.trim())
+    .filter((s) => s.length > 40);
 }
 
-// -----------------------------
-// TF-IDF MODEL
-// -----------------------------
+/* =====================================================
+   5️⃣ TF-IDF MODEL BUILDER
+===================================================== */
 
 interface DocumentVector {
   content: string;
@@ -49,35 +105,39 @@ interface DocumentVector {
   norm: number;
 }
 
-let docVectors: DocumentVector[] = [];
-let idfMap: Map<string, number> = new Map();
+interface TfIdfModel {
+  docVectors: DocumentVector[];
+  idfMap: Map<string, number>;
+}
 
-function buildTfIdf() {
-  const N = documents.length;
+function buildTfIdfModel(docs: any[]): TfIdfModel {
+  const N = docs.length;
+
   const dfCount: Map<string, number> = new Map();
   const termCounts: Map<string, number>[] = [];
 
-  documents.forEach((doc: any) => {
+  docs.forEach((doc) => {
     const tokens = tokenize(doc.content);
     const termCount: Map<string, number> = new Map();
 
-    tokens.forEach(term => {
+    tokens.forEach((term) => {
       termCount.set(term, (termCount.get(term) || 0) + 1);
     });
 
     termCounts.push(termCount);
 
-    const unique = new Set(tokens);
-    unique.forEach(term => {
+    const uniqueTerms = new Set(tokens);
+    uniqueTerms.forEach((term) => {
       dfCount.set(term, (dfCount.get(term) || 0) + 1);
     });
   });
 
+  const idfMap: Map<string, number> = new Map();
   dfCount.forEach((df, term) => {
     idfMap.set(term, Math.log(N / (1 + df)));
   });
 
-  docVectors = termCounts.map((termCount, index) => {
+  const docVectors: DocumentVector[] = termCounts.map((termCount, index) => {
     const tfidf = new Map<string, number>();
     let norm = 0;
 
@@ -89,31 +149,40 @@ function buildTfIdf() {
     });
 
     return {
-      content: documents[index].content,
+      content: docs[index].content,
       tfidf,
-      norm: Math.sqrt(norm)
+      norm: Math.sqrt(norm),
     };
   });
 
-  console.log("✅ TF-IDF model ready");
+  return { docVectors, idfMap };
 }
 
-buildTfIdf();
+/* =====================================================
+   6️⃣ BUILD SEPARATE LANGUAGE MODELS
+===================================================== */
 
-// -----------------------------
-// COSINE SIMILARITY
-// -----------------------------
+const englishModel = buildTfIdfModel(science);
+const marathiModel = buildTfIdfModel(science_marathi);
+
+console.log("English docs:", englishModel.docVectors.length);
+console.log("Marathi docs:", marathiModel.docVectors.length);
+
+/* =====================================================
+   7️⃣ COSINE SIMILARITY
+===================================================== */
+
 function cosineSimilarity(
   queryVector: Map<string, number>,
   queryNorm: number,
-  tfidf: Map<string, number>,
+  docVector: Map<string, number>,
   docNorm: number
 ): number {
   let dot = 0;
 
   queryVector.forEach((value, term) => {
-    if (tfidf.has(term)) {
-      dot += value * (tfidf.get(term) || 0);
+    if (docVector.has(term)) {
+      dot += value * (docVector.get(term) || 0);
     }
   });
 
@@ -122,25 +191,32 @@ function cosineSimilarity(
   return dot / (queryNorm * docNorm);
 }
 
-// -----------------------------
-// MAIN FUNCTION
-// -----------------------------
-export function runOfflineRag(question: string) {
+/* =====================================================
+   8️⃣ MAIN FUNCTION
+===================================================== */
 
+export function runOfflineRag(question: string) {
   const start = Date.now();
+  const detectedLanguage = detectLanguageFromScript(question);
+
+  const model = detectedLanguage === "marathi" ? marathiModel : englishModel;
+
   const tokens = tokenize(question);
 
   if (tokens.length === 0) {
     return {
-      text: "No meaningful keywords found.",
+      text:
+        detectedLanguage === "marathi"
+          ? "कृपया अर्थपूर्ण प्रश्न विचारा."
+          : "Please ask a meaningful question.",
       confidence: 0,
-      processingTime: 0
+      processingTime: 0,
     };
   }
 
   // Build query vector
   const queryCount = new Map<string, number>();
-  tokens.forEach(term => {
+  tokens.forEach((term) => {
     queryCount.set(term, (queryCount.get(term) || 0) + 1);
   });
 
@@ -148,7 +224,7 @@ export function runOfflineRag(question: string) {
   let queryNorm = 0;
 
   queryCount.forEach((tf, term) => {
-    const idf = idfMap.get(term) || 0;
+    const idf = model.idfMap.get(term) || 0;
     const weight = tf * idf;
     queryVector.set(term, weight);
     queryNorm += weight * weight;
@@ -156,63 +232,56 @@ export function runOfflineRag(question: string) {
 
   queryNorm = Math.sqrt(queryNorm);
 
-  // Rank top 3 chunks
-  const rankedChunks = docVectors
-    .map(doc => ({
+  const rankedChunks = model.docVectors
+    .map((doc) => ({
       content: doc.content,
-      score: cosineSimilarity(queryVector, queryNorm, doc.tfidf, doc.norm)
+      score: cosineSimilarity(queryVector, queryNorm, doc.tfidf, doc.norm),
     }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
 
-  // Extract sentences from top chunks
+  if (rankedChunks.length === 0 || rankedChunks[0].score === 0) {
+    return {
+      text:
+        detectedLanguage === "marathi"
+          ? "माझ्या सामग्रीमध्ये या प्रश्नाचे उत्तर उपलब्ध नाही."
+          : "I don't have information about this in my materials.",
+      confidence: 0.2,
+      processingTime: Date.now() - start,
+    };
+  }
+
   const allSentences: { sentence: string; score: number }[] = [];
 
-  rankedChunks.forEach(chunk => {
+  rankedChunks.forEach((chunk) => {
     const sentences = splitSentences(chunk.content);
 
-    sentences.forEach(sentence => {
+    sentences.forEach((sentence) => {
       const sentenceTokens = tokenize(sentence);
 
-      let sentenceScore = 0;
-      sentenceTokens.forEach(term => {
+      let score = 0;
+
+      sentenceTokens.forEach((term) => {
         if (queryVector.has(term)) {
-          sentenceScore += queryVector.get(term) || 0;
+          score += queryVector.get(term) || 0;
         }
       });
 
-      if (sentenceScore > 0) {
-        allSentences.push({
-          sentence,
-          score: sentenceScore
-        });
+      if (score > 0) {
+        allSentences.push({ sentence, score });
       }
     });
   });
 
-  if (allSentences.length === 0) {
-    return {
-      text: "I don't have information about this in my materials.",
-      confidence: 0.2,
-      processingTime: Date.now() - start
-    };
-  }
-
-  // Sort sentences
   allSentences.sort((a, b) => b.score - a.score);
 
-  // Pick top 4 sentences
-  const bestSentences = allSentences
-    .slice(0, 4)
-    .map(s => s.sentence);
+  const bestSentences = allSentences.slice(0, 4).map((s) => s.sentence);
 
   const finalAnswer = bestSentences.join(" ");
 
-  const confidence = Math.min(1, rankedChunks[0].score);
-
   return {
     text: finalAnswer,
-    confidence,
-    processingTime: Date.now() - start
+    confidence: Math.min(1, rankedChunks[0].score),
+    processingTime: Date.now() - start,
   };
 }

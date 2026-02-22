@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -16,6 +16,8 @@ import { Text, View } from "@/components/themed";
 import { Button } from "@/components/ui/Button";
 import { theme } from "@/theme/theme";
 import { useVoiceAssistant, Message } from "@/hooks/useVoiceAssistant";
+import { ttsService } from "@/services/tts.service";
+import { detectLanguage } from "@/lib/mockAI";
 
 interface VoiceAssistantProps {
   context?: string;
@@ -36,7 +38,15 @@ export function VoiceAssistant({ context, style }: VoiceAssistantProps) {
     handleSpeak,
   } = useVoiceAssistant({ context });
 
+  const [currentSpeakingId, setCurrentSpeakingId] = useState<string | null>(null);
+
   const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    return () => {
+      ttsService.stop();
+    };
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: true });
@@ -269,7 +279,22 @@ export function VoiceAssistant({ context, style }: VoiceAssistantProps) {
                     }}
                   >
                     <Pressable
-                      onPress={() => handleSpeak(message)}
+                      onPress={() => {
+                        if (currentSpeakingId === message.id) {
+                          ttsService.stop();
+                          setCurrentSpeakingId(null);
+                        } else {
+                          const lang = detectLanguage(message.content);
+                          const langCode = lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'en-US';
+
+                          ttsService.speak(message.content, {
+                            language: langCode,
+                            onStart: () => setCurrentSpeakingId(message.id),
+                            onDone: () => setCurrentSpeakingId(null),
+                            onError: () => setCurrentSpeakingId(null),
+                          });
+                        }
+                      }}
                       style={({ pressed }) => ({
                         flexDirection: "row",
                         alignItems: "center",
@@ -282,7 +307,7 @@ export function VoiceAssistant({ context, style }: VoiceAssistantProps) {
                       })}
                     >
                       <Icon
-                        name={speakingMessageId === message.id ? "stop" : "scan"}
+                        name={currentSpeakingId === message.id ? "stop" : "scan"}
                         size={12}
                         color={theme.colors.primary}
                       />
@@ -291,7 +316,7 @@ export function VoiceAssistant({ context, style }: VoiceAssistantProps) {
                         color: theme.colors.primary,
                         fontWeight: "700"
                       }}>
-                        {speakingMessageId === message.id ? "STOPPING" : "LISTEN"}
+                        {currentSpeakingId === message.id ? "STOPPING" : "LISTEN"}
                       </Text>
                     </Pressable>
                   </View>

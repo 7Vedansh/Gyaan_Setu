@@ -1,5 +1,5 @@
 # ingest.py
-# Clean PDF → High Quality JSON for Offline RAG
+# Multi-PDF → High Quality JSON for Offline RAG
 
 import os
 import json
@@ -7,10 +7,10 @@ import re
 from unstructured.partition.pdf import partition_pdf
 from unstructured.chunking.title import chunk_by_title
 
-PDF_PATH = "docs/science.pdf"
-OUTPUT_PATH = "vector_store/documents.json"
+DOCS_FOLDER = "docs"
+OUTPUT_FOLDER = "vector_store"
 
-os.makedirs("vector_store", exist_ok=True)
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 
 # -----------------------------
@@ -18,44 +18,32 @@ os.makedirs("vector_store", exist_ok=True)
 # -----------------------------
 
 def clean_text(text: str) -> str:
-    # Remove figure captions
     text = re.sub(r"Fig\.\s*\d+(\.\d+)*:.*", "", text)
-
-    # Remove equation-only lines like F = ma (8.4)
     text = re.sub(r"^[A-Za-z0-9\s=\-\+\(\)\.\^]+$", "", text, flags=re.MULTILINE)
-
-    # Remove page headers like SCIENCE
     text = re.sub(r"\bSCIENCE\b", "", text)
-
-    # Fix broken lines
     text = text.replace("\n", " ")
     text = re.sub(r"\s+", " ", text)
-
     return text.strip()
 
 
 def is_valid_chunk(text: str) -> bool:
-    # Minimum length
     if len(text) < 150:
         return False
-
-    # Must contain multiple sentences
     if text.count(".") < 2:
         return False
-
     return True
 
 
 # -----------------------------
-# INGEST FUNCTION
+# SINGLE PDF PROCESSOR
 # -----------------------------
 
-def ingest():
+def process_pdf(pdf_path):
 
-    print("📄 Extracting PDF...")
+    print(f"\n📄 Processing: {pdf_path}")
 
     elements = partition_pdf(
-        filename=PDF_PATH,
+        filename=pdf_path,
         strategy="fast",
         languages=["eng"]
     )
@@ -80,10 +68,38 @@ def ingest():
             })
             index += 1
 
-    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
+    # Output filename = same name as PDF
+    pdf_name = os.path.splitext(os.path.basename(pdf_path))[0]
+    output_path = os.path.join(OUTPUT_FOLDER, f"{pdf_name}.json")
+
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(documents, f, ensure_ascii=False, indent=2)
 
-    print(f"✅ Clean JSON saved with {len(documents)} chunks")
+    print(f"✅ Saved {len(documents)} chunks → {output_path}")
+
+
+# -----------------------------
+# MAIN INGEST
+# -----------------------------
+
+def ingest():
+
+    print("🚀 MULTI-PDF INGEST STARTED")
+
+    pdf_files = [
+        os.path.join(DOCS_FOLDER, file)
+        for file in os.listdir(DOCS_FOLDER)
+        if file.lower().endswith(".pdf")
+    ]
+
+    if not pdf_files:
+        print("❌ No PDFs found in docs folder.")
+        return
+
+    for pdf_path in pdf_files:
+        process_pdf(pdf_path)
+
+    print("\n🎉 All PDFs processed successfully!")
 
 
 if __name__ == "__main__":
