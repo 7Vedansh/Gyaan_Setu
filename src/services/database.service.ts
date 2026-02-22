@@ -1,4 +1,4 @@
-import { ChapterInput, ChapterRow, QuizResultRow } from '@/types/store';
+import { ChapterInput, ChapterRow, QuizQuestionAttemptRow, QuizResultRow, TopicCompletionRow } from '@/types/store';
 import * as SQLite from 'expo-sqlite';
 import type { ResultSet, ResultSetError } from 'expo-sqlite';
 
@@ -90,6 +90,32 @@ class DatabaseService {
                     content_json    TEXT    NOT NULL,
                     fetched_at      INTEGER NOT NULL
                 )`,args: []
+            },
+            {
+                sql: `CREATE TABLE IF NOT EXISTS topic_progress (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    chapter_id      TEXT    NOT NULL,
+                    stage_id        TEXT    NOT NULL UNIQUE,
+                    source_topic_id TEXT    NOT NULL,
+                    stage_order     INTEGER NOT NULL,
+                    stage_type      TEXT    NOT NULL,
+                    is_completed    INTEGER NOT NULL DEFAULT 0,
+                    completed_at    INTEGER,
+                    updated_at      INTEGER NOT NULL
+                )`, args: []
+            },
+            {
+                sql: `CREATE TABLE IF NOT EXISTS quiz_question_progress (
+                    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+                    chapter_id           TEXT    NOT NULL,
+                    source_topic_id      TEXT    NOT NULL,
+                    stage_id             TEXT    NOT NULL,
+                    quiz_id              TEXT    NOT NULL UNIQUE,
+                    last_selected_option INTEGER NOT NULL,
+                    is_correct           INTEGER NOT NULL,
+                    attempts_count       INTEGER NOT NULL DEFAULT 1,
+                    last_attempted_at    INTEGER NOT NULL
+                )`, args: []
             }
         ];
 
@@ -105,6 +131,10 @@ class DatabaseService {
             { sql: `CREATE INDEX IF NOT EXISTS idx_quiz_results_is_synced ON quiz_results(is_synced)`, args: [] },
             {sql: `CREATE INDEX IF NOT EXISTS idx_chapters_chapter_id ON chapters(chapter_id)`, args: [] },
             {sql: `CREATE INDEX IF NOT EXISTS idx_chapters_subject_id ON chapters(subject_id)`, args: [] },
+            { sql: `CREATE INDEX IF NOT EXISTS idx_topic_progress_chapter_id ON topic_progress(chapter_id)`, args: [] },
+            { sql: `CREATE INDEX IF NOT EXISTS idx_topic_progress_stage_order ON topic_progress(stage_order)`, args: [] },
+            { sql: `CREATE INDEX IF NOT EXISTS idx_qqp_chapter_id ON quiz_question_progress(chapter_id)`, args: [] },
+            { sql: `CREATE INDEX IF NOT EXISTS idx_qqp_source_topic_id ON quiz_question_progress(source_topic_id)`, args: [] },
             ];
 
         const indexResults = await this.db.execAsync(indexQueries, false);
@@ -320,6 +350,101 @@ class DatabaseService {
         await this.runSql(
             'UPDATE quiz_results SET is_synced = 1 WHERE id = ?',
             [id]
+        );
+    }
+
+    async getTopicProgressByChapter(chapterId: string): Promise<TopicCompletionRow[]> {
+        return this.query<TopicCompletionRow>(
+            'SELECT * FROM topic_progress WHERE chapter_id = ? ORDER BY stage_order ASC',
+            [chapterId]
+        );
+    }
+
+    async markTopicStageCompleted(data: {
+        chapter_id: string;
+        stage_id: string;
+        source_topic_id: string;
+        stage_order: number;
+        stage_type: 'microlesson' | 'quiz';
+    }): Promise<void> {
+        if (!this.db) throw new Error('Database not initialized');
+
+        const now = Date.now();
+        const sql = `
+            INSERT INTO topic_progress
+                (chapter_id, stage_id, source_topic_id, stage_order, stage_type, is_completed, completed_at, updated_at)
+            VALUES
+                (?, ?, ?, ?, ?, 1, ?, ?)
+            ON CONFLICT(stage_id) DO UPDATE SET
+                chapter_id      = excluded.chapter_id,
+                source_topic_id = excluded.source_topic_id,
+                stage_order     = excluded.stage_order,
+                stage_type      = excluded.stage_type,
+                is_completed    = 1,
+                completed_at    = excluded.completed_at,
+                updated_at      = excluded.updated_at
+        `;
+
+        const args = [
+            data.chapter_id,
+            data.stage_id,
+            data.source_topic_id,
+            data.stage_order,
+            data.stage_type,
+            now,
+            now,
+        ];
+
+        const results = await this.db.execAsync([{ sql, args }], false);
+        const err = results.find((r): r is ResultSetError => r != null && 'error' in r);
+        if (err) throw err.error;
+    }
+
+    async upsertQuizQuestionProgress(data: {
+        chapter_id: string;
+        source_topic_id: string;
+        stage_id: string;
+        quiz_id: string;
+        selected_option: number;
+        is_correct: boolean;
+        attempted_at: number;
+    }): Promise<void> {
+        if (!this.db) throw new Error('Database not initialized');
+
+        const sql = `
+            INSERT INTO quiz_question_progress
+                (chapter_id, source_topic_id, stage_id, quiz_id, last_selected_option, is_correct, attempts_count, last_attempted_at)
+            VALUES
+                (?, ?, ?, ?, ?, ?, 1, ?)
+            ON CONFLICT(quiz_id) DO UPDATE SET
+                chapter_id           = excluded.chapter_id,
+                source_topic_id      = excluded.source_topic_id,
+                stage_id             = excluded.stage_id,
+                last_selected_option = excluded.last_selected_option,
+                is_correct           = excluded.is_correct,
+                attempts_count       = quiz_question_progress.attempts_count + 1,
+                last_attempted_at    = excluded.last_attempted_at
+        `;
+
+        const args = [
+            data.chapter_id,
+            data.source_topic_id,
+            data.stage_id,
+            data.quiz_id,
+            data.selected_option,
+            data.is_correct ? 1 : 0,
+            data.attempted_at,
+        ];
+
+        const results = await this.db.execAsync([{ sql, args }], false);
+        const err = results.find((r): r is ResultSetError => r != null && 'error' in r);
+        if (err) throw err.error;
+    }
+
+    async getQuizQuestionProgressByChapter(chapterId: string): Promise<QuizQuestionAttemptRow[]> {
+        return this.query<QuizQuestionAttemptRow>(
+            'SELECT * FROM quiz_question_progress WHERE chapter_id = ? ORDER BY last_attempted_at DESC',
+            [chapterId]
         );
     }
 

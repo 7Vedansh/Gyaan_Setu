@@ -14,9 +14,10 @@ import { useBreakpoint } from "@/context/breakpoints";
 import { useCourse } from "@/context/course";
 import { DEFAULT_LANGUAGE_CODE } from "@/constants/default";
 import { useTheme } from "@/context/theme";
+import { buildTopicStages, TopicStage } from "@/services/topicFlow.service";
 import { Chapter } from "@/types/course";
 import DatabaseService from "@/services/database.service";
-import { CachedChapterRow, StoredTopic } from "@/types/store";
+import { CachedChapterRow, StoredTopic, TopicCompletionRow } from "@/types/store";
 import ContentService from "@/services/content.service";
 import ApiService from "@/services/api.service";
 
@@ -35,6 +36,8 @@ export default function Learn() {
   // ── SQLite chapter state ────────────────────────────────────────────────────
   const [currentChapter, setCurrentChapter] = useState<CachedChapterRow | null>(null);
   const [topics, setTopics] = useState<StoredTopic[]>([]);
+  const [stages, setStages] = useState<TopicStage[]>([]);
+  const [topicProgressRows, setTopicProgressRows] = useState<TopicCompletionRow[]>([]);
   const [isChapterLoading, setIsChapterLoading] = useState(true);
   const [debugInfo, setDebugInfo] = useState("");
   const currentSection = course.sections[courseProgress.sectionId];
@@ -45,6 +48,8 @@ export default function Learn() {
       setIsChapterLoading(false);
       setCurrentChapter(null);
       setTopics([]);
+      setStages([]);
+      setTopicProgressRows([]);
       setDebugInfo(`No course id yet. courseId=${String(courseId)} subjectId=${String(currentSubjectId)}`);
       return;
     }
@@ -86,6 +91,8 @@ export default function Learn() {
                 setDebugInfo(`No subject id yet. courseId=${String(courseId)} subjectId=null and no cached subject`);
                 setCurrentChapter(null);
                 setTopics([]);
+                setStages([]);
+                setTopicProgressRows([]);
                 return;
               }
             } catch (bootstrapErr) {
@@ -96,6 +103,8 @@ export default function Learn() {
               );
               setCurrentChapter(null);
               setTopics([]);
+              setStages([]);
+              setTopicProgressRows([]);
               return;
             }
           }
@@ -127,20 +136,28 @@ export default function Learn() {
 
         setCurrentChapter(row);
         const parsedTopics = row ? (JSON.parse(row.content_json) as StoredTopic[]) : [];
+        const parsedStages = buildTopicStages(parsedTopics, 5);
+        const progressRows = row
+          ? await DatabaseService.getTopicProgressByChapter(row.chapter_id)
+          : [];
         const microCount = parsedTopics.reduce((acc, t) => acc + t.microlessons.length, 0);
         const quizCount = parsedTopics.reduce((acc, t) => acc + t.quizzes.length, 0);
         console.log(
-          `[Learn] Loaded chapter row=${row?.chapter_id ?? "none"}, topics=${parsedTopics.length}, microlessons=${microCount}, quizzes=${quizCount}`
+          `[Learn] Loaded chapter row=${row?.chapter_id ?? "none"}, topics=${parsedTopics.length}, stages=${parsedStages.length}, microlessons=${microCount}, quizzes=${quizCount}`
         );
         setDebugInfo(
-          `row=${row?.chapter_id ?? "none"} topics=${parsedTopics.length} micro=${microCount} quiz=${quizCount}`
+          `row=${row?.chapter_id ?? "none"} topics=${parsedTopics.length} stages=${parsedStages.length} micro=${microCount} quiz=${quizCount}`
         );
         setTopics(parsedTopics);
+        setStages(parsedStages);
+        setTopicProgressRows(progressRows);
       } catch (err) {
         console.error('[Learn] Failed to load chapter from SQLite:', err);
         setDebugInfo(`load error: ${err instanceof Error ? err.message : String(err)}`);
         setCurrentChapter(null);
         setTopics([]);
+        setStages([]);
+        setTopicProgressRows([]);
       } finally {
         setIsChapterLoading(false);
       }
@@ -167,7 +184,18 @@ export default function Learn() {
   const renderCourseChapter = (chapter: Chapter, chapterIndex: number) => {
     // Check if this chapter's SQLite content is loaded
     const isThisCurrentChapter = courseProgress.chapterId === chapterIndex;
-    const chapterTopics = isThisCurrentChapter ? topics : [];
+    const chapterStages = isThisCurrentChapter ? stages : [];
+    const completedStageIds = new Set(
+      topicProgressRows
+        .filter((row) => row.is_completed === 1)
+        .map((row) => row.stage_id)
+    );
+
+    const firstIncompleteStageIndex = chapterStages.findIndex((stage, idx) => {
+      const isDone = completedStageIds.has(stage.stage_id);
+      if (isDone) return false;
+      return idx === 0 || completedStageIds.has(chapterStages[idx - 1].stage_id);
+    });
 
     return (
       <View
@@ -224,7 +252,7 @@ export default function Learn() {
         <View style={{ gap: layouts.padding * 2, alignItems: "center" }}>
           {isThisCurrentChapter && isChapterLoading ? (
             <ActivityIndicator size="small" color={primary} />
-          ) : isThisCurrentChapter && chapterTopics.length === 0 ? (
+          ) : isThisCurrentChapter && chapterStages.length === 0 ? (
             <View style={{ alignItems: "center", gap: 6 }}>
               <Text style={{ color: mutedForeground, fontSize: 14 }}>
                 Content not available offline yet.
@@ -234,27 +262,25 @@ export default function Learn() {
               </Text>
             </View>
           ) : (
-            chapterTopics.map((topic, topicIndex) => {
+            chapterStages.map((stage, topicIndex) => {
               if (translateX > CAMP || translateX < -CAMP) isOdd = !isOdd;
               if (topicIndex !== 0) isOdd ? (translateX += CIRCLE_RADUIS) : (translateX -= CIRCLE_RADUIS);
 
               const isCurrentTopic =
-                isThisCurrentChapter && courseProgress.lessonId === topicIndex;
+                isThisCurrentChapter && topicIndex === firstIncompleteStageIndex;
               const isFinishedTopic =
-                (isThisCurrentChapter && topicIndex < courseProgress.lessonId) ||
+                (isThisCurrentChapter && completedStageIds.has(stage.stage_id)) ||
                 chapterIndex < courseProgress.chapterId;
 
               return (
                 <LessonItem
-                  key={topic.topic_id}
+                  key={stage.stage_id}
                   index={topicIndex}
                   circleRadius={CIRCLE_RADUIS}
-                  topic={topic}
+                  stage={stage}
                   currentChapterMongoId={chapter._id ?? ""}
                   isCurrentLesson={isCurrentTopic}
                   isFinishedLesson={isFinishedTopic}
-                  totalMicroLessons={topic.microlessons.length}
-                  totalQuizzes={topic.quizzes.length}
                   style={{ transform: [{ translateX }] }}
                   courseProgression={{
                     sectionId: courseProgress.sectionId,

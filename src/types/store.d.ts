@@ -33,6 +33,30 @@ export interface QuizResult {
     is_synced: number;
 }
 
+export interface TopicProgressRow {
+    id: number;
+    chapter_id: string;
+    stage_id: string;
+    source_topic_id: string;
+    stage_order: number;
+    stage_type: "microlesson" | "quiz";
+    is_completed: number;
+    completed_at?: number | null;
+    updated_at: number;
+}
+
+export interface QuizQuestionProgressRow {
+    id: number;
+    chapter_id: string;
+    source_topic_id: string;
+    stage_id: string;
+    quiz_id: string;
+    last_selected_option: number;
+    is_correct: number;
+    attempts_count: number;
+    last_attempted_at: number;
+}
+
 export interface QuizResultAnswer {
     questionIndex: number;
     selectedAnswer: string;
@@ -101,3 +125,5 @@ export interface ChapterInput {
 export type CachedChapterRow = ChapterRow;
 export type CachedChapterInput = ChapterInput;
 export type QuizResultRow = QuizResult;
+export type TopicCompletionRow = TopicProgressRow;
+export type QuizQuestionAttemptRow = QuizQuestionProgressRow;
