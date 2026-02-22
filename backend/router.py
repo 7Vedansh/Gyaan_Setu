@@ -1,4 +1,4 @@
-from online_model import run_online_model
+﻿from online_model import run_online_model
 from offline_rag import run_offline_rag
 from langdetect import detect, LangDetectException
 import re
@@ -101,16 +101,16 @@ def tutor_router(question: str) -> Dict:
     # Detect language
     language = detect_language_robust(question)
     
-    print(f"🌐 Detected language: {language}")
-    print(f"❓ Question: {question[:100]}...")
+    print(f"[INFO] Detected language: {language}")
+    print(f"[INFO] Question: {question[:100]}...")
     
     # Try online model first
     try:
-        print("🌍 Attempting online model...")
+        print("[INFO] Attempting online model...")
         answer = run_online_model(question, language)
         
         if answer and len(answer.strip()) > 10:
-            print("✅ Online model succeeded")
+            print("[INFO] Online model succeeded")
             return {
                 "mode": "online",
                 "text": answer,
@@ -121,8 +121,8 @@ def tutor_router(question: str) -> Dict:
             raise ValueError("Online response too short or empty")
     
     except Exception as e:
-        print(f"⚠ Online model failed: {str(e)}")
-        print("🔄 Falling back to offline RAG...")
+        print(f"[WARN] Online model failed: {str(e)}")
+        print("[INFO] Falling back to offline RAG...")
     
     # Fallback to offline RAG
     try:
@@ -134,7 +134,7 @@ def tutor_router(question: str) -> Dict:
         else:
             confidence = OFFLINE_CONFIDENCE_BASE
         
-        print("✅ Offline RAG completed")
+        print("[INFO] Offline RAG completed")
         return {
             "mode": "offline",
             "text": answer,
@@ -143,7 +143,7 @@ def tutor_router(question: str) -> Dict:
         }
     
     except Exception as e:
-        print(f"❌ Offline RAG also failed: {str(e)}")
+        print(f"[ERROR] Offline RAG also failed: {str(e)}")
         
         # Last resort fallback
         return {

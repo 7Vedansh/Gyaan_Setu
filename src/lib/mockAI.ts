@@ -36,9 +36,11 @@ export interface RecognitionOptions {
 // CONFIGURATION
 // =========================
 
-const API_URL =
-  process.env.EXPO_PUBLIC_API_URL || "http://10.33.122.128:8000/predict";
+const ONLINE_MODEL_BASE_URL =
+  process.env.EXPO_PUBLIC_ONLINE_AI_MODEL_URL ||
+  "http://10.33.122.59:8000";
 
+const API_URL = `${ONLINE_MODEL_BASE_URL.replace(/\/$/, "")}/predict`;
 const DEFAULT_TIMEOUT = 15000;
 
 const LANGUAGE_CODES = {

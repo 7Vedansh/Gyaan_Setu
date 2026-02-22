@@ -1,15 +1,35 @@
-from openai import OpenAI
-import os
+﻿import os
+from pathlib import Path
+
 from dotenv import load_dotenv
-load_dotenv()
+from openai import OpenAI
 
 # =========================
 # CONFIG
 # =========================
-client = OpenAI(
-    api_key=os.getenv("GROQ_API_KEY"),
-    base_url="https://api.groq.com/openai/v1"
-)
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR.parent / ".env")
+
+_client = None
+
+
+def _get_client() -> OpenAI:
+    global _client
+
+    if _client is not None:
+        return _client
+
+    api_key = (os.getenv("GROQ_API_KEY") or os.getenv("OPENAI_API_KEY") or "").strip()
+    if not api_key:
+        raise RuntimeError(
+            "Missing API key. Set GROQ_API_KEY in Gyaan_Setu/backend/.env "
+            "or export OPENAI_API_KEY."
+        )
+
+    base_url = (os.getenv("GROQ_BASE_URL") or "https://api.groq.com/openai/v1").strip()
+    _client = OpenAI(api_key=api_key, base_url=base_url)
+    return _client
 
 # =========================
 # LANGUAGE-SPECIFIC SYSTEM PROMPTS
@@ -113,7 +133,7 @@ def run_online_model(question: str, language: str) -> str:
     user_prompt = LANGUAGE_INSTRUCTIONS[language].format(question=question)
     
     try:
-        response = client.chat.completions.create(
+        response = _get_client().chat.completions.create(
             model="llama-3.1-8b-instant",
             temperature=0.3,  # Slightly creative but mostly deterministic
             top_p=0.9,
@@ -133,5 +153,6 @@ def run_online_model(question: str, language: str) -> str:
         return answer
         
     except Exception as e:
-        print(f"❌ Online model error: {e}")
+        print(f"[ERROR] Online model error: {e}")
         raise  # Re-raise to allow router to fallback to offline
+

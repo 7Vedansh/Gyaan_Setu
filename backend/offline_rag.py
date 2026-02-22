@@ -1,4 +1,4 @@
-# offline_rag.py
+﻿# offline_rag.py
 import json
 import re
 import os
@@ -7,7 +7,7 @@ from collections import Counter
 VECTOR_FOLDER = "vector_store"
 TOP_K = 3
 
-print("🔁 Loading Keyword-Based Offline RAG...")
+print("[INFO] Loading Keyword-Based Offline RAG...")
 
 documents = []
 
@@ -15,7 +15,7 @@ documents = []
 # LOAD ALL JSON FILES
 # ---------------------------
 if not os.path.exists(VECTOR_FOLDER):
-    raise FileNotFoundError("❌ vector_store folder not found.")
+    raise FileNotFoundError("[ERROR] vector_store folder not found.")
 
 for file in os.listdir(VECTOR_FOLDER):
     if file.endswith(".json"):
@@ -31,7 +31,7 @@ for file in os.listdir(VECTOR_FOLDER):
                     "content": item["content"]
                 })
 
-print(f"✅ Loaded {len(documents)} total chunks from all subjects")
+print(f"[INFO] Loaded {len(documents)} total chunks from all subjects")
 
 
 # ---------------------------
