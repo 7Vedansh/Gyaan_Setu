@@ -1,6 +1,6 @@
 import React from "react";
 import { Tabs } from "expo-router";
-import { Home, Brain, User } from "lucide-react-native";
+import { Home, Brain, Trophy, User } from "lucide-react-native";
 import { theme } from "@/theme/theme";
 import { View } from "react-native";
 
@@ -72,6 +72,27 @@ export default function TabLayout() {
                             }}
                         >
                             <Brain color={color} size={focused ? size + 2 : size} />
+                        </View>
+                    ),
+                }}
+            />
+
+            {/* Leaderboards */}
+            <Tabs.Screen
+                name="leaderboards"
+                options={{
+                    title: "Leaderboard",
+                    tabBarIcon: ({ color, size, focused }) => (
+                        <View
+                            style={{
+                                backgroundColor: focused
+                                    ? hexToRgba(theme.colors.primary, 0.15)
+                                    : "transparent",
+                                padding: 8,
+                                borderRadius: 16,
+                            }}
+                        >
+                            <Trophy color={color} size={focused ? size + 2 : size} />
                         </View>
                     ),
                 }}
