@@ -8,12 +8,13 @@ import {
   ViewStyle,
 } from "react-native";
 
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
+import { MotiView } from "moti";
 import { Icon } from "@/components/icons";
 import { Text, View } from "@/components/themed";
 import { Button } from "@/components/ui/Button";
-import { colors } from "@/constants/colors";
-import { layouts } from "@/constants/layouts";
-import { useTheme } from "@/context/theme";
+import { theme } from "@/theme/theme";
 import { useVoiceAssistant, Message } from "@/hooks/useVoiceAssistant";
 
 interface VoiceAssistantProps {
@@ -22,18 +23,6 @@ interface VoiceAssistantProps {
 }
 
 export function VoiceAssistant({ context, style }: VoiceAssistantProps) {
-  const {
-    border,
-    muted,
-    mutedForeground,
-    primary,
-    primaryForeground,
-    secondary,
-    accent,
-    foreground,
-    background,
-  } = useTheme();
-
   const {
     messages,
     input,
@@ -55,134 +44,254 @@ export function VoiceAssistant({ context, style }: VoiceAssistantProps) {
 
 
   return (
-    <View
+    <MotiView
+      from={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: "timing", duration: 600 }}
       style={[
         {
-          borderRadius: layouts.radiusLg,
-          borderWidth: layouts.borderWidth,
-          borderColor: border,
-          backgroundColor: secondary,
+          borderRadius: theme.radius.xl,
+          backgroundColor: isOnline ? "rgba(124, 58, 237, 0.05)" : "transparent",
           overflow: "hidden",
-          shadowColor: "#000",
-          shadowOpacity: 0.04,
-          shadowRadius: 8,
-          shadowOffset: { width: 0, height: 2 },
-          elevation: 1,
+          flex: 1,
+          borderWidth: 1,
+          borderColor: theme.colors.glassBorder,
         },
         style,
       ]}
     >
-      <View
+      <BlurView
+        intensity={60}
+        tint="dark"
         style={{
-          padding: layouts.padding * 1.5,
-          borderBottomWidth: layouts.borderWidth,
-          borderBottomColor: border,
-          backgroundColor: accent,
+          padding: theme.spacing.lg,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.colors.glassBorder,
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: layouts.padding,
+          ...theme.shadows.md,
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <View
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 18,
-              backgroundColor: primary,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Icon name="shieldStar" size={18} color={primaryForeground} />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md }}>
+          <View style={{ position: "relative" }}>
+            <MotiView
+              from={{ opacity: 0.3, scale: 1 }}
+              animate={{ opacity: 0, scale: 1.5 }}
+              transition={{
+                type: "timing",
+                duration: 2000,
+                loop: true,
+              }}
+              style={{
+                position: "absolute",
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: theme.colors.primary,
+                top: -2,
+                left: -2,
+              }}
+            />
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: theme.colors.primary,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 2,
+                borderColor: theme.colors.glassBorder,
+              }}
+            >
+              <Icon name="shieldStar" size={22} color={theme.colors.primaryForeground} />
+            </View>
+            <View
+              style={{
+                position: "absolute",
+                bottom: -2,
+                right: -2,
+                width: 12,
+                height: 12,
+                borderRadius: 6,
+                backgroundColor: theme.colors.secondary,
+                borderWidth: 2,
+                borderColor: theme.colors.background,
+                shadowColor: theme.colors.secondary,
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 1,
+                shadowRadius: 4,
+                elevation: 4,
+              }}
+            />
           </View>
           <View>
-            <Text style={{ fontSize: 14, fontWeight: "700", letterSpacing: -0.2 }}>
-              AI Tutor
+            <Text style={{
+              fontSize: theme.typography.sizes.md,
+              fontFamily: theme.typography.fontFamily.heading,
+              fontWeight: theme.typography.weights.semibold as any,
+              color: theme.colors.text.primary,
+              letterSpacing: 0.5
+            }}>
+              Parth AI
             </Text>
-            <Text style={{ fontSize: 12, color: mutedForeground }}>
-              {isOnline ? "Cloud AI active" : "Local AI (offline)"}
+            <Text style={{ fontSize: 11, color: theme.colors.text.secondary, fontWeight: "600" }}>
+              {isOnline ? "Online & Ready" : "System Standby"}
             </Text>
           </View>
         </View>
-      </View>
+
+        <View
+          style={{
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 6,
+            borderWidth: 1,
+            borderColor: theme.colors.primary,
+            backgroundColor: "rgba(124, 58, 237, 0.1)",
+          }}
+        >
+          <Text style={{
+            fontSize: 10,
+            fontWeight: "900",
+            color: theme.colors.primary,
+            letterSpacing: 1
+          }}>
+            AI POWERED
+          </Text>
+        </View>
+      </BlurView>
 
       <ScrollView
         ref={scrollRef}
         style={{ flex: 1 }}
         contentContainerStyle={{
-          padding: layouts.padding * 1.25,
-          gap: layouts.padding,
+          padding: theme.spacing.lg,
+          gap: theme.spacing.lg,
         }}
         showsVerticalScrollIndicator={false}
       >
-        {messages.map((message) => {
+        {messages.map((message, index) => {
           const isUser = message.role === "user";
           return (
-            <View
+            <MotiView
               key={message.id}
+              from={{ opacity: 0, translateY: 20 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              transition={{
+                type: "timing",
+                duration: 400,
+                delay: index * 50,
+              }}
               style={{
                 flexDirection: "row",
                 justifyContent: isUser ? "flex-end" : "flex-start",
-                gap: layouts.padding,
+                gap: theme.spacing.sm,
               }}
             >
               {!isUser && (
                 <View
                   style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 14,
-                    backgroundColor: accent,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: "rgba(124, 58, 237, 0.1)",
                     alignItems: "center",
                     justifyContent: "center",
-                    marginTop: 2,
+                    marginTop: 4,
+                    borderWidth: 1,
+                    borderColor: theme.colors.glassBorder,
                   }}
                 >
-                  <Icon name="shieldStar" size={14} color={primary} />
+                  <Icon name="shieldStar" size={16} color={theme.colors.primary} />
                 </View>
               )}
               <View style={{ maxWidth: "80%" }}>
-                <View
-                  style={{
-                    paddingHorizontal: layouts.padding,
-                    paddingVertical: layouts.padding * 0.75,
-                    borderRadius: layouts.radiusLg,
-                    borderTopLeftRadius: isUser ? layouts.radiusLg : 6,
-                    borderTopRightRadius: isUser ? 6 : layouts.radiusLg,
-                    backgroundColor: isUser ? primary : muted,
-                  }}
-                >
-                  <Text
+                {isUser ? (
+                  <LinearGradient
+                    colors={[theme.colors.primary, theme.colors.primaryLight]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
                     style={{
-                      fontSize: 14,
-                      lineHeight: 20,
-                      color: isUser ? primaryForeground : undefined,
+                      paddingHorizontal: theme.spacing.lg,
+                      paddingVertical: theme.spacing.md,
+                      borderRadius: 20,
+                      borderBottomRightRadius: 4,
+                      ...theme.shadows.md,
                     }}
                   >
-                    {message.content}
-                  </Text>
-                </View>
+                    <Text
+                      style={{
+                        fontSize: theme.typography.sizes.md,
+                        lineHeight: theme.typography.sizes.md * theme.typography.lineHeight,
+                        color: theme.colors.primaryForeground,
+                        fontWeight: theme.typography.weights.medium as any,
+                      }}
+                    >
+                      {message.content}
+                    </Text>
+                  </LinearGradient>
+                ) : (
+                  <View
+                    style={{
+                      paddingHorizontal: theme.spacing.lg,
+                      paddingVertical: theme.spacing.md,
+                      borderRadius: 20,
+                      borderBottomLeftRadius: 4,
+                      backgroundColor: theme.colors.surfaceDark,
+                      borderWidth: 1,
+                      borderColor: theme.colors.glassBorder,
+                      ...theme.shadows.sm,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: theme.typography.sizes.md,
+                        lineHeight: theme.typography.sizes.md * theme.typography.lineHeight,
+                        color: theme.colors.text.primary,
+                        fontWeight: theme.typography.weights.medium as any,
+                      }}
+                    >
+                      {message.content}
+                    </Text>
+                  </View>
+                )}
+
                 {message.role === "assistant" && (
                   <View
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
-                      gap: 8,
-                      marginTop: 6,
+                      gap: 12,
+                      marginTop: 8,
+                      marginLeft: 4,
                     }}
                   >
-                    {message.isLocal && (
-                      <Text style={{ fontSize: 11, color: mutedForeground }}>
-                        Local
-                      </Text>
-                    )}
-                    <Pressable onPress={() => handleSpeak(message)}>
-                      <Text style={{ fontSize: 11, color: mutedForeground }}>
-                        {speakingMessageId === message.id
-                          ? "Stop"
-                          : "Listen"}
+                    <Pressable
+                      onPress={() => handleSpeak(message)}
+                      style={({ pressed }) => ({
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6,
+                        opacity: pressed ? 0.7 : 1,
+                        backgroundColor: "rgba(255, 255, 255, 0.05)",
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: 12,
+                      })}
+                    >
+                      <Icon
+                        name={speakingMessageId === message.id ? "stop" : "scan"}
+                        size={12}
+                        color={theme.colors.primary}
+                      />
+                      <Text style={{
+                        fontSize: 11,
+                        color: theme.colors.primary,
+                        fontWeight: "700"
+                      }}>
+                        {speakingMessageId === message.id ? "STOPPING" : "LISTEN"}
                       </Text>
                     </Pressable>
                   </View>
@@ -191,119 +300,245 @@ export function VoiceAssistant({ context, style }: VoiceAssistantProps) {
               {isUser && (
                 <View
                   style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 14,
-                    backgroundColor: primary,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: theme.colors.primary,
                     alignItems: "center",
                     justifyContent: "center",
-                    marginTop: 2,
+                    marginTop: 4,
+                    ...theme.shadows.sm,
                   }}
                 >
-                  <Icon name="profile" size={14} color={primaryForeground} />
+                  <Icon name="profile" size={16} color={theme.colors.primaryForeground} />
                 </View>
               )}
-            </View>
+            </MotiView>
           );
         })}
         {isLoading && (
-          <View
+          <MotiView
+            from={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
             style={{
               flexDirection: "row",
               alignItems: "center",
-              gap: layouts.padding,
+              gap: theme.spacing.sm,
             }}
           >
             <View
               style={{
-                width: 28,
-                height: 28,
-                borderRadius: 14,
-                backgroundColor: accent,
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: "rgba(124, 58, 237, 0.1)",
                 alignItems: "center",
                 justifyContent: "center",
+                borderWidth: 1,
+                borderColor: theme.colors.glassBorder,
               }}
             >
-              <Icon name="shieldStar" size={14} color={primary} />
+              <Icon name="shieldStar" size={16} color={theme.colors.primary} />
             </View>
             <View
               style={{
-                paddingHorizontal: layouts.padding,
-                paddingVertical: layouts.padding * 0.75,
-                borderRadius: layouts.radiusLg,
-                backgroundColor: muted,
+                paddingHorizontal: theme.spacing.lg,
+                paddingVertical: theme.spacing.md,
+                borderRadius: 20,
+                borderBottomLeftRadius: 4,
+                backgroundColor: theme.colors.surfaceDark,
+                borderWidth: 1,
+                borderColor: theme.colors.glassBorder,
+                minWidth: 80,
+                overflow: "hidden",
               }}
             >
-              <ActivityIndicator size="small" color={mutedForeground} />
+              <MotiView
+                from={{ translateX: -60 }}
+                animate={{ translateX: 100 }}
+                transition={{
+                  type: "timing",
+                  duration: 1000,
+                  loop: true,
+                  repeatReverse: false,
+                }}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  bottom: 0,
+                  width: 40,
+                  backgroundColor: "rgba(124, 58, 237, 0.2)",
+                  transform: [{ skewX: "-20deg" }],
+                }}
+              />
+              <View style={{ flexDirection: "row", gap: 4 }}>
+                {[0, 1, 2].map((i) => (
+                  <MotiView
+                    key={i}
+                    from={{ opacity: 0.3, scale: 1 }}
+                    animate={{ opacity: 1, scale: 1.2 }}
+                    transition={{
+                      type: "timing",
+                      duration: 400,
+                      delay: i * 200,
+                      loop: true,
+                    }}
+                    style={{
+                      width: 4,
+                      height: 4,
+                      borderRadius: 2,
+                      backgroundColor: theme.colors.primary,
+                    }}
+                  />
+                ))}
+              </View>
             </View>
-          </View>
+          </MotiView>
         )}
       </ScrollView>
 
-      <View
+      <BlurView
+        intensity={80}
+        tint="dark"
         style={{
-          borderTopWidth: layouts.borderWidth,
-          borderTopColor: border,
-          padding: layouts.padding * 1.25,
-          backgroundColor: colors.transparent,
-          gap: layouts.padding,
+          borderTopWidth: 1,
+          borderTopColor: theme.colors.glassBorder,
+          padding: theme.spacing.lg,
+          paddingBottom: theme.spacing.xl,
+          gap: theme.spacing.md,
         }}
       >
-        <View style={{ flexDirection: "row", gap: layouts.padding }}>
-          <Button
-            variant={isListening ? "ghost" : "outline"}
-            viewStyle={{
-              paddingHorizontal: layouts.padding,
-              minWidth: 72,
+        <View
+          style={{
+            flexDirection: "row",
+            gap: theme.spacing.sm,
+            alignItems: "flex-end"
+          }}
+        >
+          <MotiView
+            animate={{
+              scale: isListening ? [1, 1.1, 1] : 1,
             }}
-            onPress={handleVoiceInput}
+            transition={{
+              type: "timing",
+              duration: 1000,
+              loop: true,
+            }}
           >
-            <Text style={{ fontSize: 12, fontWeight: "700" }}>
-              {isListening ? "Stop" : "Mic"}
-            </Text>
-          </Button>
-          <TextInput
-            value={input}
-            onChangeText={setInput}
-            placeholder="Type or speak your question..."
-            placeholderTextColor={mutedForeground}
-            editable={!isLoading}
-            onSubmitEditing={handleSend}
+            <LinearGradient
+              colors={isListening ? [theme.colors.secondary, theme.colors.sucess] : [theme.colors.primary, theme.colors.primaryLight]}
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 26,
+                alignItems: "center",
+                justifyContent: "center",
+                ...theme.shadows.md,
+                shadowColor: isListening ? theme.colors.secondary : theme.colors.primary,
+              }}
+            >
+              <Pressable
+                onPress={handleVoiceInput}
+                style={({ pressed }) => ({
+                  width: "100%",
+                  height: "100%",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: pressed ? 0.8 : 1,
+                })}
+              >
+                <Icon
+                  name={isListening ? "stop" : "mic"}
+                  size={24}
+                  color={theme.colors.primaryForeground}
+                />
+              </Pressable>
+            </LinearGradient>
+          </MotiView>
+
+          <View
             style={{
               flex: 1,
-              borderWidth: layouts.borderWidth,
-              borderColor: border,
-              borderRadius: layouts.radius,
-              paddingHorizontal: layouts.padding,
-              paddingVertical: layouts.padding * 0.75,
-              fontSize: 14,
-              color: foreground,
-              backgroundColor: background,
-            }}
-          />
-          <Button
-            onPress={handleSend}
-            disabled={!input.trim() || isLoading}
-            viewStyle={{
-              paddingHorizontal: layouts.padding,
-              minWidth: 72,
+              backgroundColor: "rgba(255, 255, 255, 0.05)",
+              borderRadius: 26,
+              borderWidth: 1,
+              borderColor: theme.colors.glassBorder,
+              flexDirection: "row",
+              alignItems: "flex-end",
+              paddingHorizontal: theme.spacing.md,
+              paddingVertical: 8,
+              minHeight: 52,
             }}
           >
-            <Text style={{ fontSize: 12, fontWeight: "700" }}>Send</Text>
-          </Button>
-        </View>
-        {isListening && (
-          <Text
+            <TextInput
+              value={input}
+              onChangeText={setInput}
+              placeholder="Ask Parth anything..."
+              placeholderTextColor={theme.colors.text.secondary}
+              editable={!isLoading}
+              onSubmitEditing={handleSend}
+              multiline
+              style={{
+                flex: 1,
+                fontSize: theme.typography.sizes.md,
+                color: theme.colors.text.primary,
+                maxHeight: 120,
+                paddingTop: 8,
+                paddingBottom: 8,
+                fontFamily: theme.typography.fontFamily.body,
+                fontWeight: theme.typography.weights.medium as any,
+              }}
+            />
+          </View>
+
+          <LinearGradient
+            colors={[theme.colors.primary, theme.colors.primaryLight]}
             style={{
-              fontSize: 12,
-              textAlign: "center",
-              color: mutedForeground,
+              width: 52,
+              height: 52,
+              borderRadius: 26,
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: !input.trim() || isLoading ? 0.5 : 1,
+              ...theme.shadows.md,
             }}
           >
-            Listening... Speak now.
-          </Text>
+            <Pressable
+              onPress={handleSend}
+              disabled={!input.trim() || isLoading}
+              style={({ pressed }) => ({
+                width: "100%",
+                height: "100%",
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: pressed ? 0.8 : 1,
+              })}
+            >
+              <Icon name="send" size={22} color={theme.colors.primaryForeground} />
+            </Pressable>
+          </LinearGradient>
+        </View>
+
+        {isListening && (
+          <MotiView
+            from={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}
+          >
+            <ActivityIndicator size="small" color={theme.colors.secondary} />
+            <Text
+              style={{
+                fontSize: 12,
+                color: theme.colors.secondary,
+                fontWeight: "700",
+                letterSpacing: 1,
+              }}
+            >
+              LISTENING...
+            </Text>
+          </MotiView>
         )}
-      </View>
-    </View>
+      </BlurView>
+    </MotiView>
   );
 }

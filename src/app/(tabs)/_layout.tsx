@@ -21,17 +21,17 @@ export default function TabLayout() {
                     backgroundColor: theme.colors.surface,
                     borderTopColor: theme.colors.border,
                     borderTopWidth: 1,
-                    height: 65,
-                    paddingBottom: 8,
+                    height: 70,
+                    paddingBottom: 12,
                     paddingTop: 8,
-                    ...theme.shadows.lg,
+                    ...theme.shadows.md,
                 },
                 tabBarActiveTintColor: theme.colors.primary,
                 tabBarInactiveTintColor: theme.colors.text.secondary,
                 tabBarLabelStyle: {
                     fontFamily: theme.typography.fontFamily.body,
                     fontSize: 12,
-                    fontWeight: "600",
+                    fontWeight: "700",
                 },
             }}
         >
@@ -44,10 +44,10 @@ export default function TabLayout() {
                         <View
                             style={{
                                 backgroundColor: focused
-                                    ? hexToRgba(theme.colors.primary, 0.2)
+                                    ? hexToRgba(theme.colors.primary, 0.15)
                                     : "transparent",
                                 padding: 8,
-                                borderRadius: 20,
+                                borderRadius: 16,
                             }}
                         >
                             <Home color={color} size={focused ? size + 2 : size} />
@@ -60,15 +60,15 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="tutor"
                 options={{
-                    title: "AI Tutor",
+                    title: "Parth AI",
                     tabBarIcon: ({ color, size, focused }) => (
                         <View
                             style={{
                                 backgroundColor: focused
-                                    ? hexToRgba(theme.colors.primary, 0.2)
+                                    ? hexToRgba(theme.colors.primary, 0.15)
                                     : "transparent",
                                 padding: 8,
-                                borderRadius: 20,
+                                borderRadius: 16,
                             }}
                         >
                             <Brain color={color} size={focused ? size + 2 : size} />
@@ -86,10 +86,10 @@ export default function TabLayout() {
                         <View
                             style={{
                                 backgroundColor: focused
-                                    ? hexToRgba(theme.colors.primary, 0.2)
+                                    ? hexToRgba(theme.colors.primary, 0.15)
                                     : "transparent",
                                 padding: 8,
-                                borderRadius: 20,
+                                borderRadius: 16,
                             }}
                         >
                             <User color={color} size={focused ? size + 2 : size} />

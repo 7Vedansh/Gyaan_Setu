@@ -520,4 +520,63 @@ export const Icons = {
       />
     </Svg>
   ),
+  mic: ({ ...props }: SvgProps) => (
+    <Svg viewBox="0 0 24 24" fill="none" {...props}>
+      <Path
+        d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+        fill={props.color}
+      />
+      <Path
+        d="M19 10v2a7 7 0 0 1-14 0v-2"
+        stroke={props.color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M12 19v4M8 23h8"
+        stroke={props.color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  ),
+  send: ({ ...props }: SvgProps) => (
+    <Svg viewBox="0 0 24 24" fill="none" {...props}>
+      <Path
+        d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"
+        stroke={props.color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  ),
+  stop: ({ ...props }: SvgProps) => (
+    <Svg viewBox="0 0 24 24" fill="none" {...props}>
+      <Path
+        d="M6 6h12v12H6z"
+        fill={props.color}
+      />
+    </Svg>
+  ),
+  scan: ({ ...props }: SvgProps) => (
+    <Svg viewBox="0 0 24 24" fill="none" {...props}>
+      <Path
+        d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"
+        stroke={props.color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M7 12h10"
+        stroke={props.color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  ),
 };

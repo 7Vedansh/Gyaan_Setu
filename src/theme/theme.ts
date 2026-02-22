@@ -2,28 +2,31 @@ import { ViewStyle, TextStyle } from "react-native";
 
 export const theme = {
     colors: {
-        primary: "#8B5CF6",       // Violet 500
-        primaryLight: "#A78BFA",
-        primaryDark: "#7C3AED",
-        secondary: "#8b15faff",     // Soft yellow accent
-        accent: "#EC4899",        // Soft pink highlight
+        primary: "#7C3AED",       // Purple 600
+        primaryLight: "#9333EA",  // Purple 500
+        primaryDark: "#6D28D9",
+        secondary: "#22C55E",     // Green 500 (Online Dot)
+        accent: "#9333EA",        // Accent for glow
 
-        background: "#1E293B",    // Slate 800
-        surface: "#263244",       // Custom Slate Surface
+        background: "#0F172A",    // Deep Slate (User request)
+        backgroundGradient: ["#0F172A", "#1E293B"], // Gradient (User request)
+        surface: "#1E293B",       // Surface (User request)
+        surfaceDark: "#1F2937",   // Chat AI Bubble (User request)
+        surfaceHover: "#334155",
 
         text: {
             primary: "#F8FAFC",     // Slate 50
-            secondary: "#CBD5E1",   // Slate 300
-            inverse: "#0B1120",
+            secondary: "#94A3B8",   // Slate 400
+            inverse: "#FFFFFF",
         },
 
         // Compatibility aliases
-        foreground: "#F9FAFB",    // Same as text.primary
-        primaryForeground: "#F9FAFB",
-        secondaryForeground: "#0B1120",
-        muted: "#1F2937",
-        mutedForeground: "#9CA3AF",
-        accentForeground: "#0B1120",
+        foreground: "#F8FAFC",
+        primaryForeground: "#FFFFFF",
+        secondaryForeground: "#FFFFFF",
+        muted: "#1E293B",
+        mutedForeground: "#64748B",
+        accentForeground: "#FFFFFF",
 
         destructive: "#EF4444",
         destructiveForeground: "#F9FAFB",
@@ -32,18 +35,21 @@ export const theme = {
 
         status: {
             success: "#22C55E",
-            warning: "#FACC15",
+            warning: "#F59E0B",
             error: "#EF4444",
-            info: "#3B82F6",
+            info: "#0EA5E9",
         },
 
-        border: "#334155",
+        border: "rgba(255, 255, 255, 0.08)", // Soft border (User request)
+        glassBorder: "rgba(255, 255, 255, 0.12)",
+        divider: "rgba(255, 255, 255, 0.04)",
+        glow: "rgba(124, 58, 237, 0.4)", // Accent Glow (User request)
     },
 
     typography: {
         fontFamily: {
-            heading: "NunitoExtraBold", // Duolingo-style bold headings
-            body: "Nunito", // Readable body font
+            heading: "NunitoExtraBold",
+            body: "Nunito",
         },
         sizes: {
             xs: 12,
@@ -56,10 +62,15 @@ export const theme = {
         },
         weights: {
             regular: "400",
-            medium: "500",
+            medium: "500", // Chat text (User request)
+            semibold: "600", // Headings (User request)
             bold: "700",
             black: "900",
         } as const,
+        lineHeight: 1.5, // Increased line height (User request)
+        letterSpacing: {
+            title: 0.5, // Slight letter spacing for AI title (User request)
+        },
     },
     spacing: {
         xs: 4,
@@ -69,39 +80,38 @@ export const theme = {
         xl: 20,
         xxl: 24,
         xxxl: 32,
-        huge: 40,
+        huge: 48,
     },
     radius: {
-        xs: 4,
-        sm: 8,
-        md: 12,
-        lg: 16,
-        xl: 24,
+        xs: 6,
+        sm: 10,
+        md: 14,
+        lg: 20,
+        xl: 28,
         round: 9999,
     },
     shadows: {
         sm: {
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
+            shadowOpacity: 0.1,
             shadowRadius: 2,
             elevation: 2,
         } as ViewStyle,
         md: {
             shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 4,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            elevation: 5,
         } as ViewStyle,
         lg: {
-            shadowColor: "#7C3AED",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.4,
-            shadowRadius: 12,
+            shadowColor: "#6366F1",
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.3,
+            shadowRadius: 16,
             elevation: 10,
         } as ViewStyle,
-
     },
 };
 
