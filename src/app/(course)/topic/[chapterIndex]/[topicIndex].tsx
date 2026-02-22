@@ -3,6 +3,7 @@ import { useLocalSearchParams, router } from "expo-router";
 import { ActivityIndicator, Pressable, ScrollView } from "react-native";
 
 import { Icon } from "@/components/icons";
+import LottiePlayer from "@/components/LottiePlayer";
 import { Metadata } from "@/components/metadata";
 import { Text, View } from "@/components/themed";
 import { Button } from "@/components/ui/Button";
@@ -10,6 +11,7 @@ import { layouts } from "@/constants/layouts";
 import { useCourse } from "@/context/course";
 import { useTheme } from "@/context/theme";
 import { useCourseContent } from "@/hooks/useCourseContent";
+import { hydrateTopicsWithAnimationSpec } from "@/services/animationSpec.service";
 import ContentService from "@/services/content.service";
 import DatabaseService from "@/services/database.service";
 import SyncService from "@/services/sync.service";
@@ -102,7 +104,8 @@ export default function TopicScreen() {
           throw new Error("Could not load chapter data for this topic.");
         }
 
-        const chapterTopics = JSON.parse(chapterRow.content_json) as StoredTopic[];
+        const chapterTopicsRaw = JSON.parse(chapterRow.content_json) as StoredTopic[];
+        const chapterTopics = hydrateTopicsWithAnimationSpec(chapterTopicsRaw);
         const stages = buildTopicStages(chapterTopics, 5);
         const resolvedStage =
           stages.find((stage) => stage.stage_id === stageIdFromParams) ??
@@ -349,6 +352,9 @@ export default function TopicScreen() {
                 <Text style={{ fontSize: 20, fontWeight: "700", color: foreground }}>
                   {currentStep.item.title}
                 </Text>
+                {currentStep.item.animationSpec && (
+                  <LottiePlayer animationSpec={currentStep.item.animationSpec} />
+                )}
                 <View style={{ gap: layouts.padding * 0.75 }}>
                   {currentStep.item.content.map((paragraph, idx) => (
                     <Text key={`${currentStep.item.microlesson_id}-${idx}`} style={{ color: foreground, lineHeight: 22 }}>

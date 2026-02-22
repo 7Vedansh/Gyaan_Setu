@@ -4,6 +4,7 @@ import { ActivityIndicator, ScrollView, Pressable, StyleSheet } from "react-nati
 import ExerciseScreen from "@/components/exercise/screens/exercise";
 import { Metadata } from "@/components/metadata";
 import { Icon } from "@/components/icons";
+import LottiePlayer from "@/components/LottiePlayer";
 import { Text, View } from "@/components/themed";
 import { Button } from "@/components/ui/Button";
 import { layouts } from "@/constants/layouts";
@@ -194,6 +195,10 @@ export default function Lesson() {
           >
             {microLesson.microlesson_title}
           </Text>
+
+          {microLesson.animationSpec && (
+            <LottiePlayer animationSpec={microLesson.animationSpec} />
+          )}
 
           {/* Theory paragraphs */}
           <View

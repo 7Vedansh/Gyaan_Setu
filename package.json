@@ -34,6 +34,7 @@
     "expo-status-bar": "~1.6.0",
     "framer-motion": "^10.16.4",
     "lucide-react-native": "^0.300.0",
+    "lottie-react-native": "^6.7.2",
     "moti": "^0.27.0",
     "nodemon": "^3.1.14",
     "react": "18.2.0",

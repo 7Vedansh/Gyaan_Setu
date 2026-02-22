@@ -1,4 +1,6 @@
 import { ENV } from '@/config/env';
+import { AnimationSpec } from '@/types/store';
+import { parseAnimationSpec } from './animationSpec.service';
 
 // ─── Response Types ─────────────────────────────────────────────────────────
 // Mirror the backend Mongoose schemas so the frontend stays type-safe.
@@ -8,6 +10,8 @@ export interface MicroLessonResponse {
     microlesson_number: number;
     microlesson_title: string;
     microlesson_content: string[];   // each element is one "slide / paragraph"
+    animation_spec?: string | null;
+    animationSpec?: AnimationSpec | null;
     topic: string;                   // ObjectId as string
     picture?: string;                // optional ObjectId as string
     createdAt: string;
@@ -112,7 +116,12 @@ export async function getMicroLessonsByTopic(
         topicId,
     });
 
-    return data.sort((a, b) => a.microlesson_number - b.microlesson_number);
+    return data
+        .map((lesson) => ({
+            ...lesson,
+            animationSpec: parseAnimationSpec(lesson.animation_spec),
+        }))
+        .sort((a, b) => a.microlesson_number - b.microlesson_number);
 }
 
 /**
@@ -124,7 +133,11 @@ export async function getMicroLessonsByTopic(
 export async function getMicroLessonById(
     id: string,
 ): Promise<MicroLessonResponse> {
-    return request<MicroLessonResponse>(`micro-lessons/${id}`);
+    const lesson = await request<MicroLessonResponse>(`micro-lessons/${id}`);
+    return {
+        ...lesson,
+        animationSpec: parseAnimationSpec(lesson.animation_spec),
+    };
 }
 
 /**

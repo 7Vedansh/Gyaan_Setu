@@ -73,6 +73,13 @@ export interface DatabaseResult {
     };
 }
 
+export interface AnimationSpec {
+    type?: string;
+    lottie_file?: string;
+    play_mode?: string;
+    trigger?: string;
+}
+
 export interface StoredQuiz {
     quiz_id: string;
     question: string;
@@ -86,6 +93,8 @@ export interface StoredMicroLesson {
     microlesson_id: string;
     title: string;
     content: string[];
+    animation_spec?: string | null;
+    animationSpec?: AnimationSpec | null;
     order: number;
 }
 

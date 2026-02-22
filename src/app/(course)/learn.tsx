@@ -14,6 +14,7 @@ import { useBreakpoint } from "@/context/breakpoints";
 import { useCourse } from "@/context/course";
 import { DEFAULT_LANGUAGE_CODE } from "@/constants/default";
 import { useTheme } from "@/context/theme";
+import { hydrateTopicsWithAnimationSpec } from "@/services/animationSpec.service";
 import { buildTopicStages, TopicStage } from "@/services/topicFlow.service";
 import { Chapter } from "@/types/course";
 import DatabaseService from "@/services/database.service";
@@ -135,7 +136,8 @@ export default function Learn() {
         }
 
         setCurrentChapter(row);
-        const parsedTopics = row ? (JSON.parse(row.content_json) as StoredTopic[]) : [];
+        const parsedTopicsRaw = row ? (JSON.parse(row.content_json) as StoredTopic[]) : [];
+        const parsedTopics = hydrateTopicsWithAnimationSpec(parsedTopicsRaw);
         const parsedStages = buildTopicStages(parsedTopics, 5);
         const progressRows = row
           ? await DatabaseService.getTopicProgressByChapter(row.chapter_id)
